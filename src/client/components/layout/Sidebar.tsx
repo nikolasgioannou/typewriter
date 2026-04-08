@@ -15,13 +15,7 @@ import {
   ScrollArea,
 } from '@ui/index'
 
-function NotebookMenu({
-  onDelete,
-  children,
-}: {
-  onDelete: () => void
-  children: React.ReactNode
-}) {
+function NotebookMenu({ onDelete, children }: { onDelete: () => void; children: React.ReactNode }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
@@ -59,7 +53,7 @@ export function Sidebar() {
   }
 
   return (
-    <div className="bg-bg-secondary flex h-full w-[220px] flex-col border-r border-border">
+    <div className="bg-bg-secondary border-border flex h-full w-[220px] flex-col border-r">
       <ScrollArea className="flex-1">
         <div className="space-y-0.5 p-2">
           <button
@@ -88,17 +82,14 @@ export function Sidebar() {
                     <span className="truncate">{nb.title}</span>
                   </button>
                   <NotebookMenu onDelete={() => handleDelete(nb.id)}>
-                    <button className="mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded opacity-0 transition-opacity hover:bg-bg-primary group-hover:opacity-100">
+                    <button className="hover:bg-bg-primary mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded opacity-0 transition-opacity group-hover:opacity-100">
                       <Ellipsis size={14} />
                     </button>
                   </NotebookMenu>
                 </div>
               </ContextMenuTrigger>
               <ContextMenuContent>
-                <ContextMenuItem
-                  className="text-kernel-error"
-                  onClick={() => handleDelete(nb.id)}
-                >
+                <ContextMenuItem className="text-kernel-error" onClick={() => handleDelete(nb.id)}>
                   Delete
                 </ContextMenuItem>
               </ContextMenuContent>
