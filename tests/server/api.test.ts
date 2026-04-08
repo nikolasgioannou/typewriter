@@ -7,6 +7,7 @@ import { appRouter } from '@server/api/router'
 
 let tmpDir: string
 let originalCwd: string
+let createdId: string
 
 beforeAll(async () => {
   tmpDir = await mkdtemp(join(tmpdir(), 'typewriter-test-'))
@@ -31,19 +32,20 @@ describe('notebooks.list', () => {
 describe('notebooks.create', () => {
   test('creates a notebook and returns it', async () => {
     const result = await caller.notebooks.create({ title: 'Test Notebook' })
-    expect(result.id).toBe('test-notebook')
+    createdId = result.id
+    expect(result.id).toHaveLength(8)
     expect(result.title).toBe('Test Notebook')
     expect(result.blocks).toHaveLength(1)
     expect(result.blocks[0]?.type).toBe('code')
 
-    const file = Bun.file(join(tmpDir, 'test-notebook.tw.json'))
+    const file = Bun.file(join(tmpDir, `${createdId}.tw.json`))
     expect(await file.exists()).toBe(true)
   })
 })
 
 describe('notebooks.byId', () => {
   test('retrieves a created notebook', async () => {
-    const result = await caller.notebooks.byId({ id: 'test-notebook' })
+    const result = await caller.notebooks.byId({ id: createdId })
     expect(result.title).toBe('Test Notebook')
   })
 
@@ -54,7 +56,7 @@ describe('notebooks.byId', () => {
 
 describe('notebooks.save', () => {
   test('saves updated notebook', async () => {
-    const notebook = await caller.notebooks.byId({ id: 'test-notebook' })
+    const notebook = await caller.notebooks.byId({ id: createdId })
     const updated = {
       ...notebook,
       title: 'Updated Title',
@@ -64,7 +66,7 @@ describe('notebooks.save', () => {
       ],
     }
 
-    const result = await caller.notebooks.save({ id: 'test-notebook', notebook: updated })
+    const result = await caller.notebooks.save({ id: createdId, notebook: updated })
     expect(result.title).toBe('Updated Title')
     expect(result.blocks).toHaveLength(2)
   })
@@ -75,6 +77,8 @@ describe('notebooks.list after create', () => {
     await caller.notebooks.create({ title: 'Second Notebook' })
     const result = await caller.notebooks.list()
     expect(result).toHaveLength(2)
-    expect(result[0]?.title).toBe('Second Notebook')
+    const titles = result.map((n) => n.title)
+    expect(titles).toContain('Second Notebook')
+    expect(titles).toContain('Updated Title')
   })
 })

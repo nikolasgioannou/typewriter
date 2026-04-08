@@ -29,7 +29,13 @@ export const useNotebookStore = create<NotebookState>((set) => ({
   isSaving: false,
   lastSaved: null,
 
-  setActiveNotebook: (id) => set({ activeNotebookId: id }),
+  setActiveNotebook: (id) => {
+    set({ activeNotebookId: id })
+    const path = id ? `/${id}` : '/'
+    if (window.location.pathname !== path) {
+      window.history.pushState(null, '', path)
+    }
+  },
 
   setNotebook: (notebook) => set({ notebook, isDirty: false }),
 

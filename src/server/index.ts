@@ -10,6 +10,7 @@ const basePort = Number(process.env['PORT'] ?? 8888)
 const serverOptions = {
   routes: {
     '/': homepage,
+    '/:notebookId': homepage,
   },
   async fetch(req: Request, server: { upgrade: (req: Request) => boolean }) {
     const url = new URL(req.url)

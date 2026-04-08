@@ -29,13 +29,6 @@ function notebookPath(id: string): string {
   return `${process.cwd()}/${id}.tw.json`
 }
 
-function slugify(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '')
-}
-
 export const notebooksRouter = router({
   list: publicProcedure.query(async () => {
     const glob = new Bun.Glob('*.tw.json')
@@ -59,7 +52,7 @@ export const notebooksRouter = router({
   }),
 
   create: publicProcedure.input(z.object({ title: z.string() })).mutation(async ({ input }) => {
-    const id = slugify(input.title) || `notebook-${Date.now()}`
+    const id = crypto.randomUUID().slice(0, 8)
     const notebook: Notebook = {
       id,
       title: input.title,
