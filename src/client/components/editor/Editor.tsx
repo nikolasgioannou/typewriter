@@ -25,6 +25,8 @@ import { DividerBlock } from './blocks/DividerBlock'
 import { HeadingBlock } from './blocks/HeadingBlock'
 import { TextBlock } from './blocks/TextBlock'
 
+const FOCUS_DELAY = 100
+
 export function Editor() {
   const {
     activeNotebookId,
@@ -79,7 +81,7 @@ export function Editor() {
         // Focus title after bulk delete
         setTimeout(() => {
           titleRef.current?.focus()
-        }, 100)
+        }, FOCUS_DELAY)
       }
     }
 
@@ -115,7 +117,7 @@ export function Editor() {
     }
 
     const newId = appendBlock('text')
-    setTimeout(() => focusBlock(newId), 100)
+    setTimeout(() => focusBlock(newId), FOCUS_DELAY)
   }, [notebook, appendBlock, focusBlock, clearSelection])
 
   if (!notebook || !activeNotebookId) {
@@ -140,7 +142,7 @@ export function Editor() {
 
   const handleAddBlock = (afterId: string, type: BlockType) => {
     const newId = addBlock(afterId, type)
-    setTimeout(() => focusBlock(newId), 100)
+    setTimeout(() => focusBlock(newId), FOCUS_DELAY)
   }
 
   const handleRemoveBlock = (blockId: string) => {
@@ -148,13 +150,13 @@ export function Editor() {
     removeBlock(blockId)
     const prevId = blockIds[idx - 1]
     if (prevId) {
-      setTimeout(() => focusBlock(prevId), 100)
+      setTimeout(() => focusBlock(prevId), FOCUS_DELAY)
     } else {
       setTimeout(() => {
         titleRef.current?.focus()
         const len = titleRef.current?.value.length ?? 0
         titleRef.current?.setSelectionRange(len, len)
-      }, 100)
+      }, FOCUS_DELAY)
     }
   }
 
@@ -186,7 +188,7 @@ export function Editor() {
               if (after) {
                 updateBlock(newId, { content: after })
               }
-              setTimeout(() => focusBlock(newId), 100)
+              setTimeout(() => focusBlock(newId), FOCUS_DELAY)
             }
           }}
           className="text-fg-primary placeholder:text-fg-tertiary mb-4 w-full bg-transparent pl-9 text-4xl font-bold"
@@ -221,7 +223,7 @@ export function Editor() {
                       onBackspace={() => handleRemoveBlock(block.id)}
                       onSlashSelect={(type) => {
                         updateBlock(block.id, { type, content: '' })
-                        setTimeout(() => focusBlock(block.id), 100)
+                        setTimeout(() => focusBlock(block.id), FOCUS_DELAY)
                       }}
                     />
                   )}

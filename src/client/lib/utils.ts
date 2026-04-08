@@ -1,7 +1,3 @@
 export function generateId(): string {
   return crypto.randomUUID()
 }
-
-export function formatTimestamp(ts: number): string {
-  return new Date(ts).toLocaleTimeString()
-}

@@ -26,6 +26,9 @@ const NotebookSchema: z.ZodType<Notebook> = z.object({
 })
 
 function notebookPath(id: string): string {
+  if (!/^[a-z0-9-]+$/.test(id)) {
+    throw new Error('Invalid notebook ID')
+  }
   return `${process.cwd()}/${id}.tw.json`
 }
 

@@ -10,7 +10,6 @@ function resetStore() {
     notebook: null,
     isDirty: false,
     isSaving: false,
-    lastSaved: null,
   })
 }
 
@@ -76,7 +75,7 @@ describe('notebook store', () => {
 
   test('markSaving and markSaved transitions', () => {
     store.getState().setNotebook(sampleNotebook)
-    store.getState().markDirty()
+    store.getState().updateTitle('trigger dirty')
     expect(store.getState().isDirty).toBe(true)
 
     store.getState().markSaving()
@@ -85,6 +84,5 @@ describe('notebook store', () => {
     store.getState().markSaved()
     expect(store.getState().isSaving).toBe(false)
     expect(store.getState().isDirty).toBe(false)
-    expect(store.getState().lastSaved).not.toBeNull()
   })
 })

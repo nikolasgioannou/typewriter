@@ -8,13 +8,12 @@ function getNotebookIdFromUrl(): string | null {
 }
 
 export function useRouting() {
-  const { activeNotebookId, setActiveNotebook } = useNotebookStore()
-
   // Read notebook ID from URL on mount
   useEffect(() => {
     const id = getNotebookIdFromUrl()
-    if (id && id !== activeNotebookId) {
-      setActiveNotebook(id)
+    if (id) {
+      // Set state without pushing to history (URL already correct)
+      useNotebookStore.setState({ activeNotebookId: id })
     }
   }, [])
 
@@ -22,7 +21,8 @@ export function useRouting() {
   useEffect(() => {
     const handlePopState = () => {
       const id = getNotebookIdFromUrl()
-      useNotebookStore.setState({ activeNotebookId: id })
+      // Set state without pushing to history (browser already updated URL)
+      useNotebookStore.setState({ activeNotebookId: id, notebook: null })
     }
 
     window.addEventListener('popstate', handlePopState)
