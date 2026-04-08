@@ -1,4 +1,7 @@
-const context: Record<string, unknown> = {}
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+// Use globalThis as the shared scope for variable persistence
+const __tw = globalThis as any
 
 function emit(data: Record<string, unknown>) {
   process.stdout.write(JSON.stringify(data) + '\n')
@@ -7,16 +10,46 @@ function emit(data: Record<string, unknown>) {
 const originalLog = console.log
 const originalError = console.error
 
-async function processLine(line: string) {
-  let parsed: { id: string; code: string }
-  try {
-    parsed = JSON.parse(line) as { id: string; code: string }
-  } catch {
-    return
+function wrapForReturn(code: string): string {
+  const trimmed = code.trimEnd()
+  const lines = trimmed.split('\n')
+  const lastLine = lines[lines.length - 1]?.trim() ?? ''
+
+  if (
+    lastLine.startsWith('var ') ||
+    lastLine.startsWith('let ') ||
+    lastLine.startsWith('const ') ||
+    lastLine.startsWith('function ') ||
+    lastLine.startsWith('class ') ||
+    lastLine.startsWith('if ') ||
+    lastLine.startsWith('for ') ||
+    lastLine.startsWith('while ') ||
+    lastLine.startsWith('switch ') ||
+    lastLine.startsWith('try ') ||
+    lastLine.startsWith('return ') ||
+    lastLine.startsWith('throw ') ||
+    lastLine.startsWith('import ') ||
+    lastLine.startsWith('export ') ||
+    lastLine === '' ||
+    lastLine.endsWith('}')
+  ) {
+    return code
   }
 
-  const { id, code } = parsed
+  lines[lines.length - 1] = `return ${lastLine}`
+  return lines.join('\n')
+}
 
+function rewriteDeclarations(code: string): string {
+  // Rewrite top-level var/let/const to assign to globalThis for persistence
+  // This is a simple heuristic that works for common notebook patterns
+  return code.replace(
+    /^(var|let|const)\s+(\w+)\s*=/gm,
+    (_match, _keyword, name) => `__tw.${name} = ${name} =`
+  )
+}
+
+async function execute(id: string, code: string) {
   console.log = (...args: unknown[]) => {
     emit({
       type: 'stdout',
@@ -34,15 +67,10 @@ async function processLine(line: string) {
   }
 
   try {
-    const asyncBody = `
-      with (context) {
-        return await (async () => {
-          ${code}
-        })()
-      }
-    `
-    const fn = new Function('context', asyncBody)
-    const result = await fn(context)
+    const rewritten = rewriteDeclarations(code)
+    const withReturn = wrapForReturn(rewritten)
+    const wrapped = `(async () => {\n${withReturn}\n})()`
+    const result = await (0, eval)(wrapped)
 
     if (result !== undefined) {
       emit({
@@ -75,10 +103,14 @@ async function readStdin() {
     buffer = lines.pop() ?? ''
     for (const line of lines) {
       if (line.trim()) {
-        await processLine(line)
+        const parsed = JSON.parse(line) as { id: string; code: string }
+        await execute(parsed.id, parsed.code)
       }
     }
   }
 }
+
+// Expose __tw globally so eval'd code can access it
+__tw.__tw = __tw
 
 readStdin()
