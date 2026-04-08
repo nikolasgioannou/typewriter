@@ -24,7 +24,7 @@
     "paths": {
       "@server/*": ["./src/server/*"],
       "@client/*": ["./src/client/*"],
-      "@types/*": ["./src/types/*"],
+      "@shared/*": ["./src/types/*"],
       "@ui/*": ["./src/client/components/ui/*"],
       "@hooks/*": ["./src/client/hooks/*"],
       "@store/*": ["./src/client/store/*"],

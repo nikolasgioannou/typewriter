@@ -1,0 +1,88 @@
+import type { Block, Notebook } from '@shared/notebook'
+import { z } from 'zod'
+
+import { publicProcedure, router } from './trpc'
+
+const OutputSchema = z.object({
+  type: z.enum(['stdout', 'stderr', 'return', 'error']),
+  text: z.string(),
+  timestamp: z.number(),
+})
+
+const BlockSchema: z.ZodType<Block> = z.object({
+  id: z.string(),
+  type: z.enum(['text', 'heading1', 'heading2', 'heading3', 'code', 'divider']),
+  content: z.string(),
+  outputs: z.array(OutputSchema).optional(),
+  executionCount: z.number().optional(),
+})
+
+const NotebookSchema: z.ZodType<Notebook> = z.object({
+  id: z.string(),
+  title: z.string(),
+  created: z.number(),
+  updated: z.number(),
+  blocks: z.array(BlockSchema),
+})
+
+function notebookPath(id: string): string {
+  return `${process.cwd()}/${id}.tw.json`
+}
+
+function slugify(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+}
+
+export const notebooksRouter = router({
+  list: publicProcedure.query(async () => {
+    const glob = new Bun.Glob('*.tw.json')
+    const notebooks: Array<{ id: string; title: string; updated: number }> = []
+
+    for await (const path of glob.scan(process.cwd())) {
+      const file = Bun.file(path)
+      const data = (await file.json()) as Notebook
+      notebooks.push({ id: data.id, title: data.title, updated: data.updated })
+    }
+
+    return notebooks.sort((a, b) => b.updated - a.updated)
+  }),
+
+  byId: publicProcedure.input(z.object({ id: z.string() })).query(async ({ input }) => {
+    const file = Bun.file(notebookPath(input.id))
+    if (!(await file.exists())) {
+      throw new Error(`Notebook "${input.id}" not found`)
+    }
+    return (await file.json()) as Notebook
+  }),
+
+  create: publicProcedure.input(z.object({ title: z.string() })).mutation(async ({ input }) => {
+    const id = slugify(input.title) || `notebook-${Date.now()}`
+    const notebook: Notebook = {
+      id,
+      title: input.title,
+      created: Date.now(),
+      updated: Date.now(),
+      blocks: [
+        {
+          id: crypto.randomUUID(),
+          type: 'code',
+          content: '',
+        },
+      ],
+    }
+
+    await Bun.write(notebookPath(id), JSON.stringify(notebook, null, 2))
+    return notebook
+  }),
+
+  save: publicProcedure
+    .input(z.object({ id: z.string(), notebook: NotebookSchema }))
+    .mutation(async ({ input }) => {
+      const updated = { ...input.notebook, updated: Date.now() }
+      await Bun.write(notebookPath(input.id), JSON.stringify(updated, null, 2))
+      return updated
+    }),
+})

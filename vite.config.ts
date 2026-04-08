@@ -11,7 +11,7 @@ export default defineConfig({
     alias: {
       '@server': resolve(__dirname, 'src/server'),
       '@client': resolve(__dirname, 'src/client'),
-      '@types': resolve(__dirname, 'src/types'),
+      '@shared': resolve(__dirname, 'src/types'),
       '@ui': resolve(__dirname, 'src/client/components/ui'),
       '@hooks': resolve(__dirname, 'src/client/hooks'),
       '@store': resolve(__dirname, 'src/client/store'),
