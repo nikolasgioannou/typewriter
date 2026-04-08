@@ -195,7 +195,7 @@ export function Editor() {
             }
           }}
           className="text-fg-primary placeholder:text-fg-tertiary mb-4 w-full bg-transparent pl-9 text-4xl font-bold"
-          placeholder="Untitled"
+          placeholder="New notebook"
         />
 
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>

@@ -38,7 +38,7 @@ export function Sidebar() {
   const utils = trpc.useUtils()
 
   const handleCreate = async () => {
-    const title = `Untitled ${(notebooks?.length ?? 0) + 1}`
+    const title = ''
     const notebook = await createMutation.mutateAsync({ title })
     await utils.notebooks.list.invalidate()
     setActiveNotebook(notebook.id)
@@ -81,7 +81,9 @@ export function Sidebar() {
                     className="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5"
                   >
                     <FileText size={16} className="shrink-0" />
-                    <span className="truncate">{nb.title}</span>
+                    <span className={cn('truncate', !nb.title && 'text-fg-tertiary')}>
+                      {nb.title || 'New notebook'}
+                    </span>
                   </button>
                   <NotebookMenu onDelete={() => handleDelete(nb.id)}>
                     <IconButton className="mr-1 shrink-0 opacity-0 group-hover:opacity-100">
