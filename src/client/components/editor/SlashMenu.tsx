@@ -10,7 +10,6 @@ interface SlashMenuItem {
   label: string
   aliases: string[]
   icon: React.ReactNode
-  shortcut?: string
 }
 
 const menuItems: SlashMenuItem[] = [
@@ -19,35 +18,30 @@ const menuItems: SlashMenuItem[] = [
     label: 'Heading 1',
     aliases: ['heading 1', 'h1', '#'],
     icon: <Heading1 size={16} />,
-    shortcut: '#',
   },
   {
     type: 'heading2',
     label: 'Heading 2',
     aliases: ['heading 2', 'h2', '##'],
     icon: <Heading2 size={16} />,
-    shortcut: '##',
   },
   {
     type: 'heading3',
     label: 'Heading 3',
     aliases: ['heading 3', 'h3', '###'],
     icon: <Heading3 size={16} />,
-    shortcut: '###',
   },
   {
     type: 'code',
     label: 'Code',
     aliases: ['code', 'typescript', 'ts', '```'],
     icon: <Code2 size={16} />,
-    shortcut: '```',
   },
   {
     type: 'divider',
     label: 'Divider',
     aliases: ['divider', 'hr', 'line', '---'],
     icon: <Minus size={16} />,
-    shortcut: '---',
   },
 ]
 
@@ -67,13 +61,12 @@ export function SlashCommandMenu({
   filter,
 }: SlashCommandMenuProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
-  const itemsRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
 
   const filtered = menuItems.filter((item) =>
     item.aliases.some((a) => a.includes(filter.toLowerCase()))
   )
 
-  // Reset selection when filter changes, close if no results
   useEffect(() => {
     setSelectedIndex(0)
     if (filter && filtered.length === 0) {
@@ -89,7 +82,6 @@ export function SlashCommandMenu({
     [onSelect, onClose]
   )
 
-  // Keyboard navigation
   useEffect(() => {
     if (!open) return
 
@@ -114,10 +106,9 @@ export function SlashCommandMenu({
     return () => window.removeEventListener('keydown', handleKeyDown, true)
   }, [open, filtered, selectedIndex, handleSelect, onClose])
 
-  // Scroll selected item into view
   useEffect(() => {
-    if (!itemsRef.current) return
-    const selected = itemsRef.current.children[selectedIndex] as HTMLElement | undefined
+    if (!listRef.current) return
+    const selected = listRef.current.children[selectedIndex] as HTMLElement | undefined
     selected?.scrollIntoView({ block: 'nearest' })
   }, [selectedIndex])
 
@@ -139,12 +130,13 @@ export function SlashCommandMenu({
           className="bg-bg-primary border-border z-50 w-64 overflow-hidden rounded-lg border shadow-lg"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
-          <div ref={itemsRef} className="max-h-72 overflow-y-auto p-1">
+          <div ref={listRef} role="menu" className="max-h-72 overflow-y-auto p-1">
             {filtered.map((item, i) => (
-              <button
+              <div
                 key={item.type}
+                role="menuitem"
                 className={cn(
-                  'flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-sm transition-colors',
+                  'flex cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 text-sm transition-colors select-none',
                   i === selectedIndex
                     ? 'bg-bg-tertiary text-fg-primary'
                     : 'text-fg-secondary hover:bg-bg-tertiary hover:text-fg-primary'
@@ -155,14 +147,11 @@ export function SlashCommandMenu({
                   handleSelect(item.type)
                 }}
               >
-                <span className="text-fg-tertiary flex h-6 w-6 shrink-0 items-center justify-center">
+                <span className="bg-bg-tertiary text-fg-tertiary border-border flex h-8 w-8 shrink-0 items-center justify-center rounded-md border">
                   {item.icon}
                 </span>
-                <span className="flex-1 text-left">{item.label}</span>
-                {item.shortcut && (
-                  <span className="text-fg-tertiary font-mono text-xs">{item.shortcut}</span>
-                )}
-              </button>
+                <span>{item.label}</span>
+              </div>
             ))}
           </div>
         </Popover.Content>

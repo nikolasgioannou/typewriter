@@ -2,8 +2,8 @@ import { javascript } from '@codemirror/lang-javascript'
 import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { EditorState } from '@codemirror/state'
 import { oneDarkHighlightStyle } from '@codemirror/theme-one-dark'
-import { EditorView, keymap } from '@codemirror/view'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { EditorView } from '@codemirror/view'
+import { useEffect, useRef, useState } from 'react'
 
 import type { Output } from '@shared/notebook'
 import { cn } from '@lib/cn'
@@ -52,11 +52,6 @@ export function CodeBlock({
   const viewRef = useRef<EditorView | null>(null)
   const isDark = useIsDark()
 
-  const handleRun = useCallback(() => {
-    onRun()
-    return true
-  }, [onRun])
-
   useEffect(() => {
     if (!editorRef.current) return
 
@@ -70,7 +65,6 @@ export function CodeBlock({
         javascript({ typescript: true }),
         highlightExt,
         EditorView.lineWrapping,
-        keymap.of([{ key: 'Mod-Enter', run: () => handleRun() }]),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             onChange(update.state.doc.toString())
