@@ -1,7 +1,9 @@
-import { Button, ScrollArea } from '@ui/index'
+import { FileText, Plus } from 'lucide-react'
+
 import { cn } from '@lib/cn'
 import { trpc } from '@lib/trpc'
 import { useNotebookStore } from '@store/notebook.store'
+import { ScrollArea } from '@ui/index'
 
 export function Sidebar() {
   const { activeNotebookId, setActiveNotebook, setNotebook } = useNotebookStore()
@@ -17,38 +19,34 @@ export function Sidebar() {
     setNotebook(notebook)
   }
 
-  const handleSelect = async (id: string) => {
-    setActiveNotebook(id)
-  }
-
   return (
-    <div className="border-border bg-bg-secondary flex h-full w-[220px] flex-col border-r">
-      <div className="flex items-center justify-between p-3">
-        <span className="text-fg-primary text-sm font-semibold">Notebooks</span>
-      </div>
+    <div className="bg-bg-secondary flex h-full w-[220px] flex-col border-r border-border">
       <ScrollArea className="flex-1">
-        <div className="space-y-0.5 px-2">
+        <div className="space-y-0.5 p-2">
+          <button
+            onClick={handleCreate}
+            className="text-fg-secondary hover:bg-bg-tertiary hover:text-fg-primary flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors"
+          >
+            <Plus size={16} />
+            New notebook
+          </button>
           {notebooks?.map((nb) => (
             <button
               key={nb.id}
-              onClick={() => handleSelect(nb.id)}
+              onClick={() => setActiveNotebook(nb.id)}
               className={cn(
-                'w-full rounded-md px-2 py-1.5 text-left text-sm transition-colors',
+                'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors',
                 activeNotebookId === nb.id
                   ? 'bg-bg-tertiary text-fg-primary'
                   : 'text-fg-secondary hover:bg-bg-tertiary hover:text-fg-primary'
               )}
             >
+              <FileText size={16} />
               {nb.title}
             </button>
           ))}
         </div>
       </ScrollArea>
-      <div className="p-2">
-        <Button variant="ghost" size="sm" className="w-full" onClick={handleCreate}>
-          + New notebook
-        </Button>
-      </div>
     </div>
   )
 }

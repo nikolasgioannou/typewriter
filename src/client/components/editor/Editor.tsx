@@ -10,10 +10,10 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useEffect } from 'react'
 
 import type { BlockType } from '@shared/notebook'
-import { trpc } from '@lib/trpc'
 import { useAutosave } from '@hooks/useAutosave'
 import { useBlockFocus } from '@hooks/useBlockFocus'
 import { useKernel } from '@hooks/useKernel'
+import { trpc } from '@lib/trpc'
 import { useKernelStore } from '@store/kernel.store'
 import { useNotebookStore } from '@store/notebook.store'
 
@@ -29,6 +29,7 @@ export function Editor() {
     notebook,
     setNotebook,
     updateBlock,
+    updateTitle,
     addBlock,
     removeBlock,
     reorderBlocks,
@@ -88,6 +89,14 @@ export function Editor() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 pl-14">
+      <input
+        type="text"
+        value={notebook.title}
+        onChange={(e) => updateTitle(e.target.value)}
+        className="text-fg-primary placeholder:text-fg-tertiary mb-4 w-full bg-transparent text-4xl font-bold outline-none"
+        placeholder="Untitled"
+      />
+
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={blockIds} strategy={verticalListSortingStrategy}>
           {notebook.blocks.map((block) => (
@@ -106,14 +115,7 @@ export function Editor() {
                   outputs={block.outputs ?? []}
                   executionCount={block.executionCount}
                   isRunning={runningBlock === block.id}
-                  isStale={
-                    (block.executionCount ?? 0) > 0 &&
-                    block.content !== '' &&
-                    runningBlock !== block.id &&
-                    // Mark as stale if content changed after last run
-                    // This is a simplification — real impl would track last-run content
-                    false
-                  }
+                  isStale={false}
                   onChange={(content) => updateBlock(block.id, { content })}
                   onRun={() => runBlock(activeNotebookId, block.id, block.content)}
                 />
