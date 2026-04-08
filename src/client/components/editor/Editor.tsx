@@ -27,7 +27,8 @@ import { HeadingBlock } from './blocks/HeadingBlock'
 import { ShellBlock } from './blocks/ShellBlock'
 import { TextBlock } from './blocks/TextBlock'
 
-const FOCUS_DELAY = 100
+// Use a ref-based focus queue to avoid stale closure issues with rapid input
+let pendingFocusId: string | null = null
 
 export function Editor() {
   const {
@@ -49,16 +50,22 @@ export function Editor() {
   const isTyping = useInputMode()
   const titleRef = useRef<HTMLInputElement>(null)
 
+  const needsFetch = !!activeNotebookId && notebook?.id !== activeNotebookId
   const { data: notebookData } = trpc.notebooks.byId.useQuery(
     { id: activeNotebookId ?? '' },
-    { enabled: !!activeNotebookId }
+    {
+      enabled: needsFetch,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      staleTime: Infinity,
+    }
   )
 
   useKernel(activeNotebookId)
   useAutosave()
 
   useEffect(() => {
-    if (notebookData && notebookData.id !== notebook?.id) {
+    if (notebookData && notebook?.id !== notebookData.id) {
       setNotebook(notebookData)
     }
   }, [notebookData, notebook?.id, setNotebook])
@@ -66,9 +73,18 @@ export function Editor() {
   // Focus title when switching to a new empty notebook
   useEffect(() => {
     if (notebook && !notebook.title && notebook.blocks.length === 0) {
-      setTimeout(() => titleRef.current?.focus(), 200)
+      requestAnimationFrame(() => titleRef.current?.focus())
     }
   }, [notebook?.id])
+
+  // Process pending focus after render
+  useEffect(() => {
+    if (pendingFocusId) {
+      const id = pendingFocusId
+      pendingFocusId = null
+      requestAnimationFrame(() => focusBlock(id))
+    }
+  })
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
 
@@ -124,7 +140,7 @@ export function Editor() {
     }
 
     const newId = appendBlock('text')
-    setTimeout(() => focusBlock(newId), FOCUS_DELAY)
+    pendingFocusId = newId
   }, [notebook, appendBlock, focusBlock, clearSelection])
 
   if (!notebook || !activeNotebookId) {
@@ -149,7 +165,7 @@ export function Editor() {
 
   const handleAddBlock = (afterId: string, type: BlockType) => {
     const newId = addBlock(afterId, type)
-    setTimeout(() => focusBlock(newId), FOCUS_DELAY)
+    pendingFocusId = newId
   }
 
   const handleRemoveBlock = (blockId: string) => {
@@ -195,7 +211,7 @@ export function Editor() {
               if (after) {
                 updateBlock(newId, { content: after })
               }
-              setTimeout(() => focusBlock(newId), FOCUS_DELAY)
+              pendingFocusId = newId
             }
           }}
           className="text-fg-primary placeholder:text-fg-tertiary mb-4 w-full bg-transparent pl-9 text-4xl font-bold"
@@ -232,7 +248,7 @@ export function Editor() {
                       onBackspace={() => handleRemoveBlock(block.id)}
                       onSlashSelect={(type) => {
                         updateBlock(block.id, { type, content: '' })
-                        setTimeout(() => focusBlock(block.id), FOCUS_DELAY)
+                        pendingFocusId = block.id
                       }}
                     />
                   )}
