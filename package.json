@@ -1,8 +1,10 @@
 {
   "name": "typewriter",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
+    "start": "bun run src/server/index.ts",
     "dev": "bun --hot run src/server/index.ts",
     "lint": "eslint .",
     "format": "prettier --write .",

@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+set -e
+
+TYPEWRITER_DIR="$HOME/.typewriter/app"
+
+# Handle flags
+case "${1:-}" in
+  --version|-v)
+    cat "$TYPEWRITER_DIR/package.json" | grep '"version"' | head -1 | sed 's/.*"version": "\(.*\)".*/\1/'
+    exit 0
+    ;;
+  --help|-h)
+    echo "Usage: typewriter [options]"
+    echo ""
+    echo "Options:"
+    echo "  -v, --version    Print version"
+    echo "  -h, --help       Print help"
+    echo "  --update         Update to latest version"
+    echo ""
+    echo "Starts the Typewriter notebook server and opens it in your browser."
+    exit 0
+    ;;
+  --update)
+    echo "Updating Typewriter..."
+    LATEST=$(curl -fsSL https://api.github.com/repos/nikolasgioannou/typewriter/releases/latest | grep '"tag_name"' | sed 's/.*"v\(.*\)".*/\1/')
+    if [ -z "$LATEST" ]; then
+      echo "Failed to fetch latest version."
+      exit 1
+    fi
+    CURRENT=$(cat "$TYPEWRITER_DIR/package.json" | grep '"version"' | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
+    if [ "$CURRENT" = "$LATEST" ]; then
+      echo "Already on latest version ($CURRENT)."
+      exit 0
+    fi
+    echo "Updating from $CURRENT to $LATEST..."
+    curl -fsSL "https://github.com/nikolasgioannou/typewriter/archive/refs/tags/v${LATEST}.tar.gz" -o /tmp/typewriter-update.tar.gz
+    rm -rf "$TYPEWRITER_DIR"
+    mkdir -p "$TYPEWRITER_DIR"
+    tar -xzf /tmp/typewriter-update.tar.gz -C "$TYPEWRITER_DIR" --strip-components=1
+    rm /tmp/typewriter-update.tar.gz
+    cd "$TYPEWRITER_DIR" && bun install --production
+    echo "Updated to $LATEST."
+    exit 0
+    ;;
+esac
+
+# Start the server
+cd "$TYPEWRITER_DIR"
+PORT=$(bun -e "
+const net = require('net');
+const s = net.createServer();
+s.listen(8888, () => { console.log(s.address().port); s.close(); });
+s.on('error', () => {
+  s.listen(0, () => { console.log(s.address().port); s.close(); });
+});
+")
+
+export PORT="$PORT"
+bun run src/server/index.ts &
+SERVER_PID=$!
+
+# Wait for server to be ready
+for i in $(seq 1 30); do
+  if curl -s "http://localhost:$PORT" > /dev/null 2>&1; then
+    break
+  fi
+  sleep 0.1
+done
+
+# Open browser
+if command -v open &> /dev/null; then
+  open "http://localhost:$PORT"
+elif command -v xdg-open &> /dev/null; then
+  xdg-open "http://localhost:$PORT"
+fi
+
+# Wait for server process
+wait $SERVER_PID
