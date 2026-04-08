@@ -43,7 +43,7 @@ export function TextBlock({ content, onChange, onEnter, onBackspace }: TextBlock
 
   return (
     <div className="prose-sm text-fg-primary max-w-none">
-      <EditorContent editor={editor} className="outline-none" />
+      <EditorContent editor={editor} />
     </div>
   )
 }

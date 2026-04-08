@@ -93,7 +93,7 @@ export function Editor() {
         type="text"
         value={notebook.title}
         onChange={(e) => updateTitle(e.target.value)}
-        className="text-fg-primary placeholder:text-fg-tertiary mb-4 w-full bg-transparent text-4xl font-bold outline-none"
+        className="text-fg-primary placeholder:text-fg-tertiary mb-4 w-full bg-transparent text-4xl font-bold"
         placeholder="Untitled"
       />
 

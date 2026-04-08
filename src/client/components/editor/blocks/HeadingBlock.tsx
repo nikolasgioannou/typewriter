@@ -59,7 +59,7 @@ export function HeadingBlock({
 
   return (
     <div className={`text-fg-primary ${headingClass[level] ?? ''}`}>
-      <EditorContent editor={editor} className="outline-none" />
+      <EditorContent editor={editor} />
     </div>
   )
 }

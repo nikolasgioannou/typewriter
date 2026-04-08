@@ -1,4 +1,5 @@
 import { javascript } from '@codemirror/lang-javascript'
+import { syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language'
 import { EditorState } from '@codemirror/state'
 import { EditorView, keymap } from '@codemirror/view'
 import { useCallback, useEffect, useRef } from 'react'
@@ -48,6 +49,7 @@ export function CodeBlock({
       doc: content,
       extensions: [
         javascript({ typescript: true }),
+        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
         EditorView.lineWrapping,
         keymap.of([{ key: 'Mod-Enter', run: () => handleRun() }]),
         EditorView.updateListener.of((update) => {
@@ -72,9 +74,6 @@ export function CodeBlock({
             backgroundColor: 'transparent',
             border: 'none',
             color: 'var(--color-fg-tertiary)',
-          },
-          '.cm-focused': {
-            outline: 'none',
           },
           '.cm-cursor': {
             borderLeftColor: 'var(--color-fg-primary)',
@@ -133,10 +132,10 @@ export function CodeBlock({
       {outputs.length > 0 && (
         <div className={cn('border-border border-t px-3 py-2', isStale && 'opacity-50')}>
           {outputs.map((output, i) => (
-            <div key={i} className="flex gap-2 font-mono text-xs">
+            <div key={i} className="flex items-baseline gap-2 py-0.5 font-mono text-xs">
               <span
                 className={cn(
-                  'mt-0.5 w-10 shrink-0 text-right',
+                  'w-12 shrink-0 text-right',
                   output.type === 'error' || output.type === 'stderr'
                     ? 'text-kernel-error'
                     : 'text-fg-tertiary'

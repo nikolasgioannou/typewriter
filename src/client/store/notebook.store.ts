@@ -60,7 +60,7 @@ export const useNotebookStore = create<NotebookState>((set) => ({
 
   removeBlock: (blockId) =>
     set((state) => {
-      if (!state.notebook || state.notebook.blocks.length <= 1) return state
+      if (!state.notebook) return state
       return {
         notebook: {
           ...state.notebook,

@@ -1,14 +1,44 @@
-import { FileText, Plus } from 'lucide-react'
+import { Ellipsis, FileText, Plus } from 'lucide-react'
 
 import { cn } from '@lib/cn'
 import { trpc } from '@lib/trpc'
 import { useNotebookStore } from '@store/notebook.store'
-import { ScrollArea } from '@ui/index'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  ScrollArea,
+} from '@ui/index'
+
+function NotebookMenu({
+  onDelete,
+  children,
+}: {
+  onDelete: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        <DropdownMenuItem className="text-kernel-error" onClick={onDelete}>
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
 
 export function Sidebar() {
   const { activeNotebookId, setActiveNotebook, setNotebook } = useNotebookStore()
   const { data: notebooks } = trpc.notebooks.list.useQuery()
   const createMutation = trpc.notebooks.create.useMutation()
+  const deleteMutation = trpc.notebooks.delete.useMutation()
   const utils = trpc.useUtils()
 
   const handleCreate = async () => {
@@ -19,31 +49,60 @@ export function Sidebar() {
     setNotebook(notebook)
   }
 
+  const handleDelete = async (id: string) => {
+    await deleteMutation.mutateAsync({ id })
+    await utils.notebooks.list.invalidate()
+    if (activeNotebookId === id) {
+      setActiveNotebook(null)
+      setNotebook(null)
+    }
+  }
+
   return (
-    <div className="bg-bg-secondary border-border flex h-full w-[220px] flex-col border-r">
+    <div className="bg-bg-secondary flex h-full w-[220px] flex-col border-r border-border">
       <ScrollArea className="flex-1">
         <div className="space-y-0.5 p-2">
           <button
             onClick={handleCreate}
             className="text-fg-secondary hover:bg-bg-tertiary hover:text-fg-primary flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors"
           >
-            <Plus size={16} />
+            <Plus size={16} className="shrink-0" />
             New notebook
           </button>
           {notebooks?.map((nb) => (
-            <button
-              key={nb.id}
-              onClick={() => setActiveNotebook(nb.id)}
-              className={cn(
-                'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors',
-                activeNotebookId === nb.id
-                  ? 'bg-bg-tertiary text-fg-primary'
-                  : 'text-fg-secondary hover:bg-bg-tertiary hover:text-fg-primary'
-              )}
-            >
-              <FileText size={16} />
-              {nb.title}
-            </button>
+            <ContextMenu key={nb.id}>
+              <ContextMenuTrigger asChild>
+                <div
+                  className={cn(
+                    'group flex w-full items-center rounded-md text-sm transition-colors',
+                    activeNotebookId === nb.id
+                      ? 'bg-bg-tertiary text-fg-primary'
+                      : 'text-fg-secondary hover:bg-bg-tertiary hover:text-fg-primary'
+                  )}
+                >
+                  <button
+                    onClick={() => setActiveNotebook(nb.id)}
+                    className="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5"
+                  >
+                    <FileText size={16} className="shrink-0" />
+                    <span className="truncate">{nb.title}</span>
+                  </button>
+                  <NotebookMenu onDelete={() => handleDelete(nb.id)}>
+                    <button className="mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded opacity-0 transition-opacity hover:bg-bg-primary group-hover:opacity-100">
+                      <Ellipsis size={14} />
+                    </button>
+                  </NotebookMenu>
+                </div>
+              </ContextMenuTrigger>
+              <ContextMenuContent>
+                <ContextMenuItem
+                  className="text-kernel-error"
+                  onClick={() => handleDelete(nb.id)}
+                >
+                  Delete
+                </ContextMenuItem>
+              </ContextMenuContent>
+            </ContextMenu>
           ))}
         </div>
       </ScrollArea>

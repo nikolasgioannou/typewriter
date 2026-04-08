@@ -85,4 +85,11 @@ export const notebooksRouter = router({
       await Bun.write(notebookPath(input.id), JSON.stringify(updated, null, 2))
       return updated
     }),
+
+  delete: publicProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
+    const { unlink } = await import('node:fs/promises')
+    const path = notebookPath(input.id)
+    await unlink(path)
+    return { id: input.id }
+  }),
 })

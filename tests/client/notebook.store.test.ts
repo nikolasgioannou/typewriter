@@ -55,9 +55,9 @@ describe('notebook store', () => {
     expect(store.getState().notebook?.blocks).toHaveLength(1)
     expect(store.getState().notebook?.blocks[0]?.id).toBe('b2')
 
-    // Should not remove last block
+    // Can remove last block — notebook becomes empty
     store.getState().removeBlock('b2')
-    expect(store.getState().notebook?.blocks).toHaveLength(1)
+    expect(store.getState().notebook?.blocks).toHaveLength(0)
   })
 
   test('reorderBlocks swaps positions', () => {
