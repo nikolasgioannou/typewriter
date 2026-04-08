@@ -15,6 +15,7 @@ interface KernelProcess {
   stdin: FileSink
   stdout: ReadableStream<Uint8Array>
   executionCounts: Map<string, number>
+  queue: Promise<void>
 }
 
 const kernels = new Map<string, KernelProcess>()
@@ -36,6 +37,7 @@ async function spawnKernel(notebookId: string): Promise<KernelProcess> {
     stdin: proc.stdin as FileSink,
     stdout: proc.stdout as ReadableStream<Uint8Array>,
     executionCounts: new Map(),
+    queue: Promise.resolve(),
   }
 }
 
@@ -48,13 +50,11 @@ async function getOrCreate(notebookId: string): Promise<KernelProcess> {
   return kernel
 }
 
-export async function* runCode(
-  notebookId: string,
+async function* runCodeInternal(
+  kernel: KernelProcess,
   blockId: string,
   code: string
 ): AsyncGenerator<KernelOutput> {
-  const kernel = await getOrCreate(notebookId)
-
   const message = JSON.stringify({ id: blockId, code }) + '\n'
   kernel.stdin.write(message)
   kernel.stdin.flush()
@@ -92,6 +92,30 @@ export async function* runCode(
   }
 }
 
+export async function* runCode(
+  notebookId: string,
+  blockId: string,
+  code: string
+): AsyncGenerator<KernelOutput> {
+  const kernel = await getOrCreate(notebookId)
+
+  // Queue: wait for any previous operation to finish before starting
+  let resolve: () => void = () => {}
+  const myTurn = new Promise<void>((r) => {
+    resolve = r
+  })
+  const previousQueue = kernel.queue
+  kernel.queue = myTurn
+
+  await previousQueue
+
+  try {
+    yield* runCodeInternal(kernel, blockId, code)
+  } finally {
+    resolve()
+  }
+}
+
 export async function* runShell(
   notebookId: string,
   blockId: string,
@@ -124,7 +148,6 @@ export async function* runShell(
     reader.releaseLock()
   }
 
-  // Interleave stdout and stderr
   const stdoutGen = readStream(stdoutReader, 'stdout')
   const stderrGen = readStream(stderrReader, 'stderr')
 

@@ -61,13 +61,6 @@ console.log(
   ['', 'typewriter', `local       ${url}`, 'kernel      ready', '', 'Ctrl+C to stop', ''].join('\n')
 )
 
-// Auto-open browser
-if (process.env['NO_OPEN'] !== '1') {
-  const platform = process.platform
-  const cmd = platform === 'darwin' ? 'open' : platform === 'win32' ? 'start' : 'xdg-open'
-  Bun.spawn([cmd, url], { stdout: 'ignore', stderr: 'ignore' })
-}
-
 process.on('SIGINT', () => {
   shutdown()
   process.exit(0)
