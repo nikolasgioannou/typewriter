@@ -6,7 +6,6 @@
   },
   "typescript.tsdk": "node_modules/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,
-  "editor.rulers": [100],
   "files.exclude": { "**/node_modules": true },
   "search.exclude": { "**/node_modules": true, "**/public": true }
 }
