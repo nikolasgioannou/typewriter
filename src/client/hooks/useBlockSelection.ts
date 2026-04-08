@@ -1,120 +1,119 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-interface SelectionRect {
+interface LassoRect {
   startX: number
   startY: number
   currentX: number
   currentY: number
 }
 
-function rectsIntersect(
-  a: { top: number; bottom: number; left: number; right: number },
-  b: { top: number; bottom: number; left: number; right: number }
+function lassoToBox(lasso: LassoRect) {
+  return {
+    left: Math.min(lasso.startX, lasso.currentX),
+    top: Math.min(lasso.startY, lasso.currentY),
+    right: Math.max(lasso.startX, lasso.currentX),
+    bottom: Math.max(lasso.startY, lasso.currentY),
+  }
+}
+
+function rectsOverlap(
+  a: { left: number; top: number; right: number; bottom: number },
+  b: { left: number; top: number; right: number; bottom: number }
 ) {
   return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
 }
 
-export function useBlockSelection(blockRefsMap: React.RefObject<Map<string, HTMLElement>>) {
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [dragRect, setDragRect] = useState<SelectionRect | null>(null)
-  const isDragging = useRef(false)
+export function useBlockSelection(editorRef: React.RefObject<HTMLDivElement | null>) {
+  const [selectedBlockIds, setSelectedBlockIds] = useState<string[]>([])
+  const [lasso, setLasso] = useState<LassoRect | null>(null)
+
+  const lassoRef = useRef({ active: false, startX: 0, startY: 0 })
 
   const clearSelection = useCallback(() => {
-    setSelectedIds(new Set())
+    setSelectedBlockIds([])
+    setLasso(null)
+    lassoRef.current = { active: false, startX: 0, startY: 0 }
   }, [])
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button !== 0) return
+  const updateLassoSelection = useCallback(
+    (lassoRect: LassoRect) => {
+      const box = lassoToBox(lassoRect)
+      const blockEls = editorRef.current?.querySelectorAll('[data-block-id]')
+      if (!blockEls) return
 
-    const target = e.target as HTMLElement
-    if (
-      target.closest('[contenteditable]') ||
-      target.closest('input') ||
-      target.closest('textarea') ||
-      target.closest('button') ||
-      target.closest('.cm-editor')
-    ) {
-      return
-    }
-
-    isDragging.current = true
-    setDragRect({
-      startX: e.clientX,
-      startY: e.clientY,
-      currentX: e.clientX,
-      currentY: e.clientY,
-    })
-    setSelectedIds(new Set())
-    e.preventDefault()
-  }, [])
-
-  const computeSelected = useCallback(
-    (rect: SelectionRect) => {
-      const box = {
-        left: Math.min(rect.startX, rect.currentX),
-        right: Math.max(rect.startX, rect.currentX),
-        top: Math.min(rect.startY, rect.currentY),
-        bottom: Math.max(rect.startY, rect.currentY),
-      }
-
-      const next = new Set<string>()
-      const refs = blockRefsMap.current
-      if (!refs) return
-
-      for (const [id, el] of refs) {
-        if (rectsIntersect(box, el.getBoundingClientRect())) {
-          next.add(id)
+      const ids: string[] = []
+      blockEls.forEach((el) => {
+        const id = el.getAttribute('data-block-id')
+        if (!id) return
+        const rect = el.getBoundingClientRect()
+        if (rectsOverlap(box, rect)) {
+          ids.push(id)
         }
+      })
+      setSelectedBlockIds(ids)
+    },
+    [editorRef]
+  )
+
+  const handleEditorMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (
+        target.closest('[contenteditable]') ||
+        target.closest('button') ||
+        target.closest('input') ||
+        target.closest('.cm-editor') ||
+        target.closest('[role="dialog"]')
+      ) {
+        if (selectedBlockIds.length > 0) setSelectedBlockIds([])
+        return
       }
 
-      setSelectedIds(next)
+      lassoRef.current = { active: true, startX: e.clientX, startY: e.clientY }
+      setLasso({ startX: e.clientX, startY: e.clientY, currentX: e.clientX, currentY: e.clientY })
+      setSelectedBlockIds([])
+      window.getSelection()?.removeAllRanges()
     },
-    [blockRefsMap]
+    [selectedBlockIds]
   )
 
   useEffect(() => {
-    const onMouseMove = (e: MouseEvent) => {
-      if (!isDragging.current) return
+    function handleMouseMove(e: MouseEvent) {
+      if (!lassoRef.current.active) return
 
-      setDragRect((prev) => {
-        if (!prev) return prev
-        const updated = { ...prev, currentX: e.clientX, currentY: e.clientY }
-        computeSelected(updated)
-        return updated
-      })
+      const rect: LassoRect = {
+        startX: lassoRef.current.startX,
+        startY: lassoRef.current.startY,
+        currentX: e.clientX,
+        currentY: e.clientY,
+      }
+      setLasso(rect)
+      updateLassoSelection(rect)
+      window.getSelection()?.removeAllRanges()
     }
 
-    const onMouseUp = () => {
-      isDragging.current = false
-      setDragRect(null)
+    function handleMouseUp() {
+      if (lassoRef.current.active) {
+        lassoRef.current.active = false
+        setLasso(null)
+      }
     }
 
-    window.addEventListener('mousemove', onMouseMove)
-    window.addEventListener('mouseup', onMouseUp)
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
     return () => {
-      window.removeEventListener('mousemove', onMouseMove)
-      window.removeEventListener('mouseup', onMouseUp)
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
     }
-  }, [computeSelected])
+  }, [updateLassoSelection])
 
-  const selectionOverlayStyle = dragRect
-    ? ({
-        position: 'fixed',
-        left: Math.min(dragRect.startX, dragRect.currentX),
-        top: Math.min(dragRect.startY, dragRect.currentY),
-        width: Math.abs(dragRect.currentX - dragRect.startX),
-        height: Math.abs(dragRect.currentY - dragRect.startY),
-        backgroundColor: 'hsl(var(--accent) / 0.08)',
-        border: '1px solid hsl(var(--accent) / 0.25)',
-        pointerEvents: 'none',
-        zIndex: 9999,
-      } as const)
-    : null
+  const lassoBox = lasso ? lassoToBox(lasso) : null
 
   return {
-    selectedIds,
+    selectedBlockIds,
     clearSelection,
-    handleMouseDown,
-    selectionOverlayStyle,
+    handleEditorMouseDown,
+    lassoBox,
+    hasSelection: selectedBlockIds.length > 0,
   }
 }

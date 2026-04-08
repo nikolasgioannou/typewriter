@@ -33,5 +33,5 @@ export function useBlockFocus() {
     }
   }, [])
 
-  return { registerBlock, focusBlock, focusedBlockRef, blockRefsMap }
+  return { registerBlock, focusBlock, focusedBlockRef }
 }

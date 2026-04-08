@@ -14,6 +14,7 @@ import { useAutosave } from '@hooks/useAutosave'
 import { useBlockFocus } from '@hooks/useBlockFocus'
 import { useBlockSelection } from '@hooks/useBlockSelection'
 import { useKernel } from '@hooks/useKernel'
+import { cn } from '@lib/cn'
 import { trpc } from '@lib/trpc'
 import { useKernelStore } from '@store/kernel.store'
 import { useNotebookStore } from '@store/notebook.store'
@@ -37,9 +38,10 @@ export function Editor() {
     reorderBlocks,
   } = useNotebookStore()
   const { runningBlock, runBlock } = useKernelStore()
-  const { registerBlock, focusBlock, blockRefsMap } = useBlockFocus()
-  const { selectedIds, clearSelection, handleMouseDown, selectionOverlayStyle } =
-    useBlockSelection(blockRefsMap)
+  const { registerBlock, focusBlock } = useBlockFocus()
+  const editorRef = useRef<HTMLDivElement>(null)
+  const { selectedBlockIds, clearSelection, handleEditorMouseDown, lassoBox, hasSelection } =
+    useBlockSelection(editorRef)
   const titleRef = useRef<HTMLInputElement>(null)
 
   const { data: notebookData } = trpc.notebooks.byId.useQuery(
@@ -58,40 +60,47 @@ export function Editor() {
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
 
-  // Delete selected blocks on Backspace/Delete, clear on Escape
+  // Keyboard: delete selected blocks, escape to clear
   useEffect(() => {
-    if (selectedIds.size === 0) return
+    if (selectedBlockIds.length === 0) return
 
-    const handleKeyDown = (e: KeyboardEvent) => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        clearSelection()
+        return
+      }
+
       if (e.key === 'Backspace' || e.key === 'Delete') {
         e.preventDefault()
-        for (const id of selectedIds) {
+        for (const id of selectedBlockIds) {
           removeBlock(id)
         }
         clearSelection()
-      }
-      if (e.key === 'Escape') {
-        clearSelection()
+        // Focus title after bulk delete
+        setTimeout(() => {
+          titleRef.current?.focus()
+        }, 100)
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedIds, removeBlock, clearSelection])
+  }, [selectedBlockIds, removeBlock, clearSelection])
 
-  // Clear selection when clicking into a block's editable area
+  // Clear selection when focusing into a block
   useEffect(() => {
-    if (selectedIds.size === 0) return
+    if (selectedBlockIds.length === 0) return
 
-    const handleFocusIn = () => {
+    function handleFocusIn() {
       clearSelection()
     }
 
     window.addEventListener('focusin', handleFocusIn)
     return () => window.removeEventListener('focusin', handleFocusIn)
-  }, [selectedIds, clearSelection])
+  }, [selectedBlockIds, clearSelection])
 
   const handleClickBelow = useCallback(() => {
+    clearSelection()
     if (!notebook) return
 
     const lastBlock = notebook.blocks[notebook.blocks.length - 1]
@@ -107,7 +116,7 @@ export function Editor() {
 
     const newId = appendBlock('text')
     setTimeout(() => focusBlock(newId), 100)
-  }, [notebook, appendBlock, focusBlock])
+  }, [notebook, appendBlock, focusBlock, clearSelection])
 
   if (!notebook || !activeNotebookId) {
     return (
@@ -151,85 +160,100 @@ export function Editor() {
 
   return (
     <div
-      className="mx-auto flex min-h-full max-w-3xl flex-col px-4 py-8 pl-14"
-      onMouseDown={handleMouseDown}
+      ref={editorRef}
+      className={cn('flex min-h-full flex-col', (hasSelection || lassoBox) && 'select-none')}
+      onMouseDown={handleEditorMouseDown}
     >
-      <input
-        ref={titleRef}
-        type="text"
-        value={notebook.title}
-        onChange={(e) => updateTitle(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault()
-            const input = e.currentTarget
-            const pos = input.selectionStart ?? notebook.title.length
-            const before = notebook.title.slice(0, pos)
-            const after = notebook.title.slice(pos)
-            updateTitle(before)
-            const newId = appendBlock('text')
-            const blocks = useNotebookStore.getState().notebook?.blocks
-            if (blocks) {
-              reorderBlocks(blocks.length - 1, 0)
+      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-8">
+        <input
+          ref={titleRef}
+          type="text"
+          value={notebook.title}
+          onChange={(e) => updateTitle(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              const input = e.currentTarget
+              const pos = input.selectionStart ?? notebook.title.length
+              const before = notebook.title.slice(0, pos)
+              const after = notebook.title.slice(pos)
+              updateTitle(before)
+              const newId = appendBlock('text')
+              const blocks = useNotebookStore.getState().notebook?.blocks
+              if (blocks) {
+                reorderBlocks(blocks.length - 1, 0)
+              }
+              if (after) {
+                updateBlock(newId, { content: after })
+              }
+              setTimeout(() => focusBlock(newId), 100)
             }
-            if (after) {
-              updateBlock(newId, { content: after })
-            }
-            setTimeout(() => focusBlock(newId), 100)
-          }
-        }}
-        className="text-fg-primary placeholder:text-fg-tertiary mb-4 w-full bg-transparent text-4xl font-bold"
-        placeholder="Untitled"
-      />
+          }}
+          className="text-fg-primary placeholder:text-fg-tertiary mb-4 w-full bg-transparent text-4xl font-bold"
+          placeholder="Untitled"
+        />
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={blockIds} strategy={verticalListSortingStrategy}>
-          {notebook.blocks.map((block) => (
-            <BlockWrapper
-              key={block.id}
-              id={block.id}
-              isSelected={selectedIds.has(block.id)}
-              registerRef={(el) => registerBlock(block.id, el)}
-            >
-              {block.type === 'code' && (
-                <CodeBlock
-                  content={block.content}
-                  outputs={block.outputs ?? []}
-                  executionCount={block.executionCount}
-                  isRunning={runningBlock === block.id}
-                  onChange={(content) => updateBlock(block.id, { content })}
-                  onRun={() => runBlock(activeNotebookId, block.id, block.content)}
-                />
-              )}
-              {block.type === 'text' && (
-                <TextBlock
-                  content={block.content}
-                  onChange={(content) => updateBlock(block.id, { content })}
-                  onEnter={() => handleAddBlock(block.id, 'text')}
-                  onBackspace={() => handleRemoveBlock(block.id)}
-                  onSlashSelect={(type) => updateBlock(block.id, { type, content: '' })}
-                />
-              )}
-              {(block.type === 'heading1' ||
-                block.type === 'heading2' ||
-                block.type === 'heading3') && (
-                <HeadingBlock
-                  content={block.content}
-                  level={block.type as 'heading1' | 'heading2' | 'heading3'}
-                  onChange={(content) => updateBlock(block.id, { content })}
-                  onEnter={() => handleAddBlock(block.id, 'text')}
-                  onBackspace={() => handleRemoveBlock(block.id)}
-                />
-              )}
-              {block.type === 'divider' && <DividerBlock />}
-            </BlockWrapper>
-          ))}
-        </SortableContext>
-      </DndContext>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={blockIds} strategy={verticalListSortingStrategy}>
+            <div className="flex flex-col gap-1">
+              {notebook.blocks.map((block) => (
+                <BlockWrapper
+                  key={block.id}
+                  id={block.id}
+                  isSelected={selectedBlockIds.includes(block.id)}
+                  registerRef={(el) => registerBlock(block.id, el)}
+                >
+                  {block.type === 'code' && (
+                    <CodeBlock
+                      content={block.content}
+                      outputs={block.outputs ?? []}
+                      executionCount={block.executionCount}
+                      isRunning={runningBlock === block.id}
+                      onChange={(content) => updateBlock(block.id, { content })}
+                      onRun={() => runBlock(activeNotebookId, block.id, block.content)}
+                    />
+                  )}
+                  {block.type === 'text' && (
+                    <TextBlock
+                      content={block.content}
+                      onChange={(content) => updateBlock(block.id, { content })}
+                      onEnter={() => handleAddBlock(block.id, 'text')}
+                      onBackspace={() => handleRemoveBlock(block.id)}
+                      onSlashSelect={(type) => updateBlock(block.id, { type, content: '' })}
+                    />
+                  )}
+                  {(block.type === 'heading1' ||
+                    block.type === 'heading2' ||
+                    block.type === 'heading3') && (
+                    <HeadingBlock
+                      content={block.content}
+                      level={block.type as 'heading1' | 'heading2' | 'heading3'}
+                      onChange={(content) => updateBlock(block.id, { content })}
+                      onEnter={() => handleAddBlock(block.id, 'text')}
+                      onBackspace={() => handleRemoveBlock(block.id)}
+                    />
+                  )}
+                  {block.type === 'divider' && <DividerBlock />}
+                </BlockWrapper>
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      </div>
 
       <div className="min-h-32 flex-1 cursor-text" onClick={handleClickBelow} />
 
-      {selectionOverlayStyle && <div style={selectionOverlayStyle} />}
+      {lassoBox && (
+        <div
+          className="bg-accent/10 border-accent/30 pointer-events-none fixed z-40 rounded-sm border"
+          style={{
+            left: lassoBox.left,
+            top: lassoBox.top,
+            width: lassoBox.right - lassoBox.left,
+            height: lassoBox.bottom - lassoBox.top,
+          }}
+        />
+      )}
     </div>
   )
 }
