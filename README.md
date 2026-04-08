@@ -17,7 +17,7 @@ Write and execute TypeScript code cells, install npm packages, and run shell com
 ## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/nikolasgioannou/typewriter/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/nikolasgioannou/typewriter/main/scripts/install.sh | bash
 ```
 
 Requires [Bun](https://bun.sh). The install script will install it for you if it's not already available.
