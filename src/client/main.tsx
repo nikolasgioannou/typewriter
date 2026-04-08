@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client'
 import { trpc } from '@lib/trpc'
 import { Editor } from '@client/components/editor/Editor'
 import { Shell } from '@client/components/layout/Shell'
+import { usePageTitle } from '@hooks/usePageTitle'
 import { useRouting } from '@hooks/useRouting'
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
 
 function AppRouting() {
   useRouting()
+  usePageTitle()
 
   return (
     <Shell>

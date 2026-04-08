@@ -31,7 +31,12 @@ function NotebookMenu({ onDelete, children }: { onDelete: () => void; children: 
 }
 
 export function Sidebar() {
-  const { activeNotebookId, setActiveNotebook, setNotebook } = useNotebookStore()
+  const {
+    activeNotebookId,
+    setActiveNotebook,
+    setNotebook,
+    notebook: activeNotebook,
+  } = useNotebookStore()
   const { data: notebooks } = trpc.notebooks.list.useQuery()
   const createMutation = trpc.notebooks.create.useMutation()
   const deleteMutation = trpc.notebooks.delete.useMutation()
@@ -81,8 +86,15 @@ export function Sidebar() {
                     className="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5"
                   >
                     <FileText size={16} className="shrink-0" />
-                    <span className={cn('truncate', !nb.title && 'text-fg-tertiary')}>
-                      {nb.title || 'New notebook'}
+                    <span
+                      className={cn(
+                        'truncate',
+                        !(activeNotebookId === nb.id ? activeNotebook?.title : nb.title) &&
+                          'text-fg-tertiary'
+                      )}
+                    >
+                      {(activeNotebookId === nb.id ? activeNotebook?.title : nb.title) ||
+                        'New notebook'}
                     </span>
                   </button>
                   <NotebookMenu onDelete={() => handleDelete(nb.id)}>
