@@ -1,4 +1,4 @@
-import { Ellipsis, FileText, Plus } from 'lucide-react'
+import { Ellipsis, FileText, Plus, Trash2 } from 'lucide-react'
 
 import { cn } from '@lib/cn'
 import { trpc } from '@lib/trpc'
@@ -21,6 +21,7 @@ function NotebookMenu({ onDelete, children }: { onDelete: () => void; children: 
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       <DropdownMenuContent align="start">
         <DropdownMenuItem className="text-kernel-error" onClick={onDelete}>
+          <Trash2 size={14} className="mr-2" />
           Delete
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -90,6 +91,7 @@ export function Sidebar() {
               </ContextMenuTrigger>
               <ContextMenuContent>
                 <ContextMenuItem className="text-kernel-error" onClick={() => handleDelete(nb.id)}>
+                  <Trash2 size={14} className="mr-2" />
                   Delete
                 </ContextMenuItem>
               </ContextMenuContent>
