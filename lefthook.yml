@@ -5,13 +5,13 @@ pre-commit:
         parallel: true
         jobs:
           - name: lint
-            glob: "*.{ts,tsx}"
+            glob: '*.{ts,tsx}'
             run: bunx eslint --fix {staged_files}
           - name: typecheck
-            glob: "*.{ts,tsx}"
+            glob: '*.{ts,tsx}'
             run: bun run typecheck
     - name: format
-      glob: "*.{ts,tsx,json,md,css}"
+      glob: '*.{ts,tsx,json,md,css}'
       run: bunx prettier --write {staged_files}
 
 commit-msg:
