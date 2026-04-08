@@ -7,12 +7,14 @@ pre-commit:
           - name: lint
             glob: '*.{ts,tsx}'
             run: bunx eslint --fix {staged_files}
+            stage_fixed: true
           - name: typecheck
             glob: '*.{ts,tsx}'
             run: bun run typecheck
     - name: format
       glob: '*.{ts,tsx,json,md,css}'
       run: bunx prettier --write {staged_files}
+      stage_fixed: true
 
 commit-msg:
   commands:
