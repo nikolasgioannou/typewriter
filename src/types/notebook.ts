@@ -1,4 +1,4 @@
-export type BlockType = 'text' | 'heading1' | 'heading2' | 'heading3' | 'code' | 'divider'
+export type BlockType = 'text' | 'heading1' | 'heading2' | 'heading3' | 'code' | 'shell' | 'divider'
 
 export type OutputType = 'stdout' | 'stderr' | 'return' | 'error'
 

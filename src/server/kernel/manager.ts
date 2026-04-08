@@ -1,6 +1,8 @@
 import type { FileSink } from 'bun'
 import { resolve } from 'path'
 
+import { ensureNotebookEnv } from '@server/lib/notebook-env'
+
 export interface KernelOutput {
   type: 'stdout' | 'stderr' | 'return' | 'error' | 'done'
   text?: string
@@ -19,11 +21,14 @@ const kernels = new Map<string, KernelProcess>()
 
 const RUNNER_PATH = resolve(import.meta.dir, 'runner.ts')
 
-function spawnKernel(): KernelProcess {
+async function spawnKernel(notebookId: string): Promise<KernelProcess> {
+  const cwd = await ensureNotebookEnv(notebookId)
+
   const proc = Bun.spawn(['bun', 'run', RUNNER_PATH], {
     stdin: 'pipe',
     stdout: 'pipe',
     stderr: 'pipe',
+    cwd,
   })
 
   return {
@@ -34,10 +39,10 @@ function spawnKernel(): KernelProcess {
   }
 }
 
-function getOrCreate(notebookId: string): KernelProcess {
+async function getOrCreate(notebookId: string): Promise<KernelProcess> {
   let kernel = kernels.get(notebookId)
   if (!kernel || kernel.process.exitCode !== null) {
-    kernel = spawnKernel()
+    kernel = await spawnKernel(notebookId)
     kernels.set(notebookId, kernel)
   }
   return kernel
@@ -48,7 +53,7 @@ export async function* runCode(
   blockId: string,
   code: string
 ): AsyncGenerator<KernelOutput> {
-  const kernel = getOrCreate(notebookId)
+  const kernel = await getOrCreate(notebookId)
 
   const message = JSON.stringify({ id: blockId, code }) + '\n'
   kernel.stdin.write(message)
@@ -87,18 +92,89 @@ export async function* runCode(
   }
 }
 
+export async function* runShell(
+  notebookId: string,
+  blockId: string,
+  command: string
+): AsyncGenerator<KernelOutput> {
+  const cwd = await ensureNotebookEnv(notebookId)
+  const startTime = performance.now()
+
+  const proc = Bun.spawn(['sh', '-c', command], {
+    cwd,
+    stdout: 'pipe',
+    stderr: 'pipe',
+    env: { ...process.env, PATH: process.env['PATH'] },
+  })
+
+  const stdoutReader = (proc.stdout as ReadableStream<Uint8Array>).getReader()
+  const stderrReader = (proc.stderr as ReadableStream<Uint8Array>).getReader()
+  const decoder = new TextDecoder()
+
+  async function* readStream(
+    reader: ReadableStreamDefaultReader<Uint8Array>,
+    type: 'stdout' | 'stderr'
+  ): AsyncGenerator<KernelOutput> {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      const text = decoder.decode(value, { stream: true })
+      if (text) yield { type, text, id: blockId }
+    }
+    reader.releaseLock()
+  }
+
+  // Interleave stdout and stderr
+  const stdoutGen = readStream(stdoutReader, 'stdout')
+  const stderrGen = readStream(stderrReader, 'stderr')
+
+  let stdoutDone = false
+  let stderrDone = false
+
+  while (!stdoutDone || !stderrDone) {
+    const promises: Array<
+      Promise<{ gen: 'stdout' | 'stderr'; result: IteratorResult<KernelOutput> }>
+    > = []
+
+    if (!stdoutDone) {
+      promises.push(stdoutGen.next().then((result) => ({ gen: 'stdout' as const, result })))
+    }
+    if (!stderrDone) {
+      promises.push(stderrGen.next().then((result) => ({ gen: 'stderr' as const, result })))
+    }
+
+    const { gen, result } = await Promise.race(promises)
+
+    if (result.done) {
+      if (gen === 'stdout') stdoutDone = true
+      else stderrDone = true
+    } else {
+      yield result.value
+    }
+  }
+
+  await proc.exited
+  const durationMs = Math.round(performance.now() - startTime)
+
+  if (proc.exitCode !== 0) {
+    yield { type: 'error', text: `Process exited with code ${proc.exitCode}`, id: blockId }
+  }
+
+  yield { type: 'done', id: blockId, durationMs }
+}
+
 export function getExecutionCount(notebookId: string, blockId: string): number {
   const kernel = kernels.get(notebookId)
   return kernel?.executionCounts.get(blockId) ?? 0
 }
 
-export function restart(notebookId: string) {
+export async function restart(notebookId: string) {
   const kernel = kernels.get(notebookId)
   if (kernel) {
     kernel.process.kill()
     kernels.delete(notebookId)
   }
-  getOrCreate(notebookId)
+  await getOrCreate(notebookId)
 }
 
 export function shutdown() {

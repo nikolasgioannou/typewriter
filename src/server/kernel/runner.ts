@@ -1,6 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { createRequire } from 'node:module'
+
 const __tw = globalThis as any
+const require = createRequire(process.cwd() + '/')
+;(__tw as any).require = require
 
 function emit(data: Record<string, unknown>) {
   process.stdout.write(JSON.stringify(data) + '\n')
@@ -43,6 +47,21 @@ function rewriteDeclarations(code: string): string {
   return code.replace(
     /^(var|let|const)\s+(\w+)\s*=/gm,
     (_match, _keyword, name) => `__tw.${name} = ${name} =`
+  )
+}
+
+function rewriteImports(code: string): string {
+  // import x from 'y' → const x = (await import('y')).default
+  // import { a, b } from 'y' → const { a, b } = await import('y')
+  // import * as x from 'y' → const x = await import('y')
+  return code.replace(
+    /^import\s+(?:(\*\s+as\s+(\w+))|(\{[^}]+\})|(\w+))\s+from\s+(['"][^'"]+['"])/gm,
+    (_match, star, starName, named, defaultName, source) => {
+      if (star) return `const ${starName} = await import(${source})`
+      if (named) return `const ${named} = await import(${source})`
+      if (defaultName) return `const ${defaultName} = (await import(${source})).default`
+      return _match
+    }
   )
 }
 
@@ -89,7 +108,8 @@ async function execute(id: string, code: string) {
   }
 
   try {
-    const rewritten = rewriteDeclarations(code)
+    const withImports = rewriteImports(code)
+    const rewritten = rewriteDeclarations(withImports)
     const withReturn = wrapForReturn(rewritten)
     const wrapped = `(async () => {\n${withReturn}\n})()`
     const result = await (0, eval)(wrapped)

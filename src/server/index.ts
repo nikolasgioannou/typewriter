@@ -57,13 +57,17 @@ function startServer(port: number, maxAttempts = 10): ReturnType<typeof Bun.serv
 
 const server = startServer(basePort)
 
-console.log(`
-  typewriter
-  local       http://localhost:${server.port}
-  kernel      ready
-
-  Ctrl+C to stop
-`)
+console.log(
+  [
+    '',
+    'typewriter',
+    `local       http://localhost:${server.port}`,
+    'kernel      ready',
+    '',
+    'Ctrl+C to stop',
+    '',
+  ].join('\n')
+)
 
 process.on('SIGINT', () => {
   shutdown()

@@ -39,8 +39,31 @@ export const wsHandler = {
       }
     }
 
+    if (msg.type === 'shell') {
+      for await (const output of kernel.runShell(msg.notebookId, msg.blockId, msg.command)) {
+        if (output.type === 'done') {
+          send(ws, {
+            type: 'done',
+            blockId: msg.blockId,
+            executionCount: 0,
+            durationMs: output.durationMs,
+          })
+        } else {
+          send(ws, {
+            type: 'output',
+            blockId: msg.blockId,
+            output: {
+              type: output.type as 'stdout' | 'stderr' | 'return' | 'error',
+              text: output.text ?? '',
+              timestamp: Date.now(),
+            },
+          })
+        }
+      }
+    }
+
     if (msg.type === 'restart') {
-      kernel.restart(msg.notebookId)
+      await kernel.restart(msg.notebookId)
       send(ws, { type: 'kernel_ready', notebookId: msg.notebookId })
     }
   },

@@ -11,7 +11,7 @@ const OutputSchema = z.object({
 
 const BlockSchema: z.ZodType<Block> = z.object({
   id: z.string(),
-  type: z.enum(['text', 'heading1', 'heading2', 'heading3', 'code', 'divider']),
+  type: z.enum(['text', 'heading1', 'heading2', 'heading3', 'code', 'shell', 'divider']),
   content: z.string(),
   outputs: z.array(OutputSchema).optional(),
   executionCount: z.number().optional(),
@@ -79,8 +79,10 @@ export const notebooksRouter = router({
 
   delete: publicProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
     const { unlink } = await import('node:fs/promises')
+    const { cleanupNotebookEnv } = await import('@server/lib/notebook-env')
     const path = notebookPath(input.id)
     await unlink(path)
+    await cleanupNotebookEnv(input.id)
     return { id: input.id }
   }),
 })

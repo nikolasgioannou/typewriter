@@ -12,6 +12,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  IconButton,
   ScrollArea,
 } from '@ui/index'
 
@@ -83,9 +84,9 @@ export function Sidebar() {
                     <span className="truncate">{nb.title}</span>
                   </button>
                   <NotebookMenu onDelete={() => handleDelete(nb.id)}>
-                    <button className="hover:bg-bg-primary mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded opacity-0 transition-opacity group-hover:opacity-100">
+                    <IconButton className="mr-1 shrink-0 opacity-0 group-hover:opacity-100">
                       <Ellipsis size={14} />
-                    </button>
+                    </IconButton>
                   </NotebookMenu>
                 </div>
               </ContextMenuTrigger>

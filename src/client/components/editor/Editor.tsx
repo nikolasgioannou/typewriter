@@ -24,6 +24,7 @@ import { BlockWrapper } from './BlockWrapper'
 import { CodeBlock } from './blocks/CodeBlock'
 import { DividerBlock } from './blocks/DividerBlock'
 import { HeadingBlock } from './blocks/HeadingBlock'
+import { ShellBlock } from './blocks/ShellBlock'
 import { TextBlock } from './blocks/TextBlock'
 
 const FOCUS_DELAY = 100
@@ -40,7 +41,7 @@ export function Editor() {
     removeBlock,
     reorderBlocks,
   } = useNotebookStore()
-  const { runningBlock, runBlock } = useKernelStore()
+  const { runningBlock, runBlock, runShell } = useKernelStore()
   const { registerBlock, focusBlock } = useBlockFocus()
   const editorRef = useRef<HTMLDivElement>(null)
   const { selectedBlockIds, clearSelection, handleEditorMouseDown, lassoBox, hasSelection } =
@@ -240,6 +241,16 @@ export function Editor() {
                       onChange={(content) => updateBlock(block.id, { content })}
                       onEnter={() => handleAddBlock(block.id, 'text')}
                       onBackspace={() => handleRemoveBlock(block.id)}
+                    />
+                  )}
+                  {block.type === 'shell' && (
+                    <ShellBlock
+                      content={block.content}
+                      outputs={block.outputs ?? []}
+                      durationMs={block.durationMs}
+                      isRunning={runningBlock === block.id}
+                      onChange={(content) => updateBlock(block.id, { content })}
+                      onRun={() => runShell(activeNotebookId, block.id, block.content)}
                     />
                   )}
                   {block.type === 'divider' && <DividerBlock />}

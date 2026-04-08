@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { GripVertical } from 'lucide-react'
 
 import { cn } from '@lib/cn'
+import { IconButton } from '@ui/index'
 
 interface BlockWrapperProps {
   id: string
@@ -45,13 +46,9 @@ export function BlockWrapper({
           hideHandle ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'
         )}
       >
-        <button
-          className="text-fg-tertiary hover:bg-bg-tertiary hover:text-fg-secondary flex h-6 w-6 cursor-grab items-center justify-center rounded"
-          {...attributes}
-          {...listeners}
-        >
+        <IconButton className="cursor-grab" {...attributes} {...listeners}>
           <GripVertical size={14} />
-        </button>
+        </IconButton>
       </div>
 
       <div className={cn('min-w-0 flex-1 rounded-md p-1', isSelected && 'bg-accent/10')}>

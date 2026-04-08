@@ -2,6 +2,7 @@ import type { Output } from './notebook'
 
 export type ClientMessage =
   | { type: 'run'; notebookId: string; blockId: string; code: string }
+  | { type: 'shell'; notebookId: string; blockId: string; command: string }
   | { type: 'restart'; notebookId: string }
 
 export type ServerMessage =
