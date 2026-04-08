@@ -8,12 +8,13 @@ function send(ws: ServerWebSocket, msg: ServerMessage) {
 }
 
 export const wsHandler = {
-  open(_ws: ServerWebSocket) {
-    // connection established
-  },
-
   async message(ws: ServerWebSocket, raw: string | Buffer) {
-    const msg = JSON.parse(typeof raw === 'string' ? raw : raw.toString()) as ClientMessage
+    let msg: ClientMessage
+    try {
+      msg = JSON.parse(typeof raw === 'string' ? raw : raw.toString()) as ClientMessage
+    } catch {
+      return
+    }
 
     if (msg.type === 'run') {
       for await (const output of kernel.runCode(msg.notebookId, msg.blockId, msg.code)) {
@@ -41,9 +42,5 @@ export const wsHandler = {
       kernel.restart(msg.notebookId)
       send(ws, { type: 'kernel_ready', notebookId: msg.notebookId })
     }
-  },
-
-  close(_ws: ServerWebSocket) {
-    // connection closed
   },
 }

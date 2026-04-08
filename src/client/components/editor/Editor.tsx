@@ -115,7 +115,6 @@ export function Editor() {
                   outputs={block.outputs ?? []}
                   executionCount={block.executionCount}
                   isRunning={runningBlock === block.id}
-                  isStale={false}
                   onChange={(content) => updateBlock(block.id, { content })}
                   onRun={() => runBlock(activeNotebookId, block.id, block.content)}
                 />
@@ -133,7 +132,7 @@ export function Editor() {
                 block.type === 'heading3') && (
                 <HeadingBlock
                   content={block.content}
-                  level={block.type}
+                  level={block.type as 'heading1' | 'heading2' | 'heading3'}
                   onChange={(content) => updateBlock(block.id, { content })}
                   onEnter={() => handleAddBlock(block.id, 'text')}
                   onBackspace={() => {

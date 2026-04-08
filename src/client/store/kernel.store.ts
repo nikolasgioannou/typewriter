@@ -40,7 +40,12 @@ export const useKernelStore = create<KernelState>((set, get) => ({
     }
 
     ws.onmessage = (event) => {
-      const msg = JSON.parse(event.data as string) as ServerMessage
+      let msg: ServerMessage
+      try {
+        msg = JSON.parse(event.data as string) as ServerMessage
+      } catch {
+        return
+      }
       const notebookStore = useNotebookStore.getState()
 
       if (msg.type === 'output') {
@@ -53,21 +58,24 @@ export const useKernelStore = create<KernelState>((set, get) => ({
 
       if (msg.type === 'done') {
         notebookStore.updateBlock(msg.blockId, { executionCount: msg.executionCount })
-        set({ runningBlock: null })
+        set((state) => ({ runningBlock: null, status: { ...state.status, [notebookId]: 'ready' } }))
       }
 
       if (msg.type === 'error') {
+        const errorOutput: Output = {
+          type: 'error',
+          text: msg.error,
+          timestamp: Date.now(),
+        }
         const block = notebookStore.notebook?.blocks.find((b) => b.id === msg.blockId)
         if (block) {
-          const errorOutput: Output = {
-            type: 'error',
-            text: msg.error,
-            timestamp: Date.now(),
-          }
           const outputs: Output[] = [...(block.outputs ?? []), errorOutput]
           notebookStore.updateBlock(msg.blockId, { outputs })
         }
-        set({ runningBlock: null })
+        set((state) => ({
+          runningBlock: null,
+          status: { ...state.status, [notebookId]: 'ready' },
+        }))
       }
 
       if (msg.type === 'kernel_ready') {
@@ -80,7 +88,11 @@ export const useKernelStore = create<KernelState>((set, get) => ({
     }
 
     ws.onclose = () => {
-      set({ ws: null })
+      set((state) => ({
+        ws: null,
+        runningBlock: null,
+        status: { ...state.status, [notebookId]: 'error' },
+      }))
     }
 
     set({ ws })
@@ -96,7 +108,6 @@ export const useKernelStore = create<KernelState>((set, get) => ({
     const { ws } = get()
     if (!ws || ws.readyState !== WebSocket.OPEN) return
 
-    // Clear previous outputs
     useNotebookStore.getState().updateBlock(blockId, { outputs: [] })
     set((state) => ({
       runningBlock: blockId,
@@ -112,21 +123,25 @@ export const useKernelStore = create<KernelState>((set, get) => ({
     if (!notebook) return
 
     const codeBlocks = notebook.blocks.filter((b) => b.type === 'code' && b.content.trim())
+    if (codeBlocks.length === 0) return
+
     let idx = 0
 
     const runNext = () => {
       const block = codeBlocks[idx]
       if (!block) return
 
+      get().runBlock(notebookId, block.id, block.content)
+
       const unsub = useKernelStore.subscribe((state) => {
-        if (state.runningBlock === null && idx < codeBlocks.length) {
+        if (state.runningBlock === null) {
           unsub()
           idx++
-          runNext()
+          if (idx < codeBlocks.length) {
+            runNext()
+          }
         }
       })
-
-      get().runBlock(notebookId, block.id, block.content)
     }
 
     runNext()

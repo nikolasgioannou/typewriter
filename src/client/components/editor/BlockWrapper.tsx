@@ -79,6 +79,16 @@ export function BlockWrapper({
                 Heading 1
               </DropdownMenuItem>
             )}
+            {blockType !== 'heading2' && (
+              <DropdownMenuItem onClick={() => onChangeType('heading2')}>
+                Heading 2
+              </DropdownMenuItem>
+            )}
+            {blockType !== 'heading3' && (
+              <DropdownMenuItem onClick={() => onChangeType('heading3')}>
+                Heading 3
+              </DropdownMenuItem>
+            )}
             {blockType !== 'divider' && (
               <DropdownMenuItem onClick={() => onChangeType('divider')}>Divider</DropdownMenuItem>
             )}

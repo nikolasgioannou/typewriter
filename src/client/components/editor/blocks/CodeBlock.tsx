@@ -7,14 +7,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { Output } from '@shared/notebook'
 import { cn } from '@lib/cn'
-import { Badge, Button } from '@ui/index'
+import { Button } from '@ui/index'
 
 interface CodeBlockProps {
   content: string
   outputs: Output[]
   executionCount?: number
   isRunning: boolean
-  isStale: boolean
   onChange: (content: string) => void
   onRun: () => void
 }
@@ -46,7 +45,6 @@ export function CodeBlock({
   outputs,
   executionCount,
   isRunning,
-  isStale,
   onChange,
   onRun,
 }: CodeBlockProps) {
@@ -133,7 +131,6 @@ export function CodeBlock({
         <div className="flex items-center gap-2">
           <span className="text-fg-tertiary font-mono text-xs">typescript</span>
           <span className="text-fg-tertiary font-mono text-xs">{countLabel}</span>
-          {isStale && <Badge variant="warning">stale</Badge>}
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -150,7 +147,7 @@ export function CodeBlock({
       <div ref={editorRef} />
 
       {outputs.length > 0 && (
-        <div className={cn('border-border border-t px-3 py-2', isStale && 'opacity-50')}>
+        <div className="border-border border-t px-3 py-2">
           {outputs.map((output, i) => (
             <div key={i} className="flex items-baseline gap-2 py-0.5 font-mono text-xs">
               <span

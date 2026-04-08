@@ -15,8 +15,13 @@ export function useAutosave() {
 
     timerRef.current = setTimeout(async () => {
       markSaving()
-      await saveMutation.mutateAsync({ id: notebook.id, notebook })
-      markSaved()
+      try {
+        await saveMutation.mutateAsync({ id: notebook.id, notebook })
+        markSaved()
+      } catch {
+        // Reset saving state so it retries on next change
+        useNotebookStore.setState({ isSaving: false })
+      }
     }, 500)
 
     return () => {

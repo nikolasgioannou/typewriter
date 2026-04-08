@@ -3,17 +3,17 @@ import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { useEffect } from 'react'
 
-import type { BlockType } from '@shared/notebook'
+type HeadingLevel = 'heading1' | 'heading2' | 'heading3'
 
 interface HeadingBlockProps {
   content: string
-  level: BlockType
+  level: HeadingLevel
   onChange: (content: string) => void
   onEnter: () => void
   onBackspace: () => void
 }
 
-const headingClass: Record<string, string> = {
+const headingClass: Record<HeadingLevel, string> = {
   heading1: 'text-3xl font-bold',
   heading2: 'text-2xl font-semibold',
   heading3: 'text-xl font-medium',
@@ -33,7 +33,7 @@ export function HeadingBlock({
     ],
     content,
     onUpdate: ({ editor: e }) => {
-      onChange(e.getText())
+      onChange(e.getHTML())
     },
     editorProps: {
       handleKeyDown: (_view, event) => {
@@ -52,13 +52,13 @@ export function HeadingBlock({
   })
 
   useEffect(() => {
-    if (editor && content !== editor.getText()) {
+    if (editor && content !== editor.getHTML()) {
       editor.commands.setContent(content)
     }
   }, [content, editor])
 
   return (
-    <div className={`text-fg-primary ${headingClass[level] ?? ''}`}>
+    <div className={`text-fg-primary ${headingClass[level]}`}>
       <EditorContent editor={editor} />
     </div>
   )
