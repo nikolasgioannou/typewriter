@@ -125,7 +125,7 @@ export function TextBlock({
   )
 
   useEffect(() => {
-    if (editableRef.current) {
+    if (editableRef.current && editableRef.current !== document.activeElement) {
       const plainText = stripHtml(content)
       if (editableRef.current.textContent !== plainText) {
         editableRef.current.textContent = plainText

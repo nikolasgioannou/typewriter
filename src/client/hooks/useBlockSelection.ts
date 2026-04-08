@@ -55,27 +55,24 @@ export function useBlockSelection(editorRef: React.RefObject<HTMLDivElement | nu
     [editorRef]
   )
 
-  const handleEditorMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      const target = e.target as HTMLElement
-      if (
-        target.closest('[contenteditable]') ||
-        target.closest('button') ||
-        target.closest('input') ||
-        target.closest('.cm-editor') ||
-        target.closest('[role="dialog"]')
-      ) {
-        if (selectedBlockIds.length > 0) setSelectedBlockIds([])
-        return
-      }
+  const handleEditorMouseDown = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement
+    if (
+      target.closest('[contenteditable]') ||
+      target.closest('button') ||
+      target.closest('input') ||
+      target.closest('.cm-editor') ||
+      target.closest('[role="dialog"]')
+    ) {
+      setSelectedBlockIds((ids) => (ids.length > 0 ? [] : ids))
+      return
+    }
 
-      lassoRef.current = { active: true, startX: e.clientX, startY: e.clientY }
-      setLasso({ startX: e.clientX, startY: e.clientY, currentX: e.clientX, currentY: e.clientY })
-      setSelectedBlockIds([])
-      window.getSelection()?.removeAllRanges()
-    },
-    [selectedBlockIds]
-  )
+    lassoRef.current = { active: true, startX: e.clientX, startY: e.clientY }
+    setLasso({ startX: e.clientX, startY: e.clientY, currentX: e.clientX, currentY: e.clientY })
+    setSelectedBlockIds([])
+    window.getSelection()?.removeAllRanges()
+  }, [])
 
   useEffect(() => {
     function handleMouseMove(e: MouseEvent) {

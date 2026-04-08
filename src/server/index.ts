@@ -41,9 +41,10 @@ function startServer(port: number, maxAttempts = 10): ReturnType<typeof Bun.serv
     try {
       return Bun.serve({ ...serverOptions, port: port + attempt })
     } catch (err) {
-      if (err instanceof Error && 'code' in err && err.code === 'EADDRINUSE') {
-        continue
-      }
+      const isPortTaken =
+        (err instanceof Error && (err as NodeJS.ErrnoException).code === 'EADDRINUSE') ||
+        String(err).includes('port')
+      if (isPortTaken) continue
       throw err
     }
   }

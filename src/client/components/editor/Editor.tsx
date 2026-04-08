@@ -88,10 +88,7 @@ export function Editor() {
           removeBlock(id)
         }
         clearSelection()
-        // Focus title after bulk delete
-        setTimeout(() => {
-          titleRef.current?.focus()
-        }, FOCUS_DELAY)
+        requestAnimationFrame(() => titleRef.current?.focus())
       }
     }
 
@@ -160,13 +157,13 @@ export function Editor() {
     removeBlock(blockId)
     const prevId = blockIds[idx - 1]
     if (prevId) {
-      setTimeout(() => focusBlock(prevId), FOCUS_DELAY)
+      requestAnimationFrame(() => focusBlock(prevId))
     } else {
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         titleRef.current?.focus()
         const len = titleRef.current?.value.length ?? 0
         titleRef.current?.setSelectionRange(len, len)
-      }, FOCUS_DELAY)
+      })
     }
   }
 

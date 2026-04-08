@@ -5,9 +5,7 @@ export function useInputMode() {
 
   useEffect(() => {
     const onKeyDown = () => setIsTyping(true)
-    const onMouseMove = () => {
-      if (isTyping) setIsTyping(false)
-    }
+    const onMouseMove = () => setIsTyping(false)
 
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('mousemove', onMouseMove)
@@ -15,7 +13,7 @@ export function useInputMode() {
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('mousemove', onMouseMove)
     }
-  }, [isTyping])
+  }, [])
 
   return isTyping
 }
