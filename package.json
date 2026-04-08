@@ -9,7 +9,11 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
-    "test": "bun test"
+    "test": "bun test",
+    "release:patch": "bun run release -- patch",
+    "release:minor": "bun run release -- minor",
+    "release:major": "bun run release -- major",
+    "release": "scripts/release.sh"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.0",
