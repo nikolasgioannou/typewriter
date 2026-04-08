@@ -62,6 +62,51 @@ export const wsHandler = {
       }
     }
 
+    if (msg.type === 'eval') {
+      for await (const output of kernel.runCode(
+        msg.notebookId,
+        msg.blockId,
+        `__tw[${JSON.stringify(msg.expression)}]`
+      )) {
+        if (output.type === 'return' && output.text) {
+          try {
+            send(ws, {
+              type: 'data',
+              blockId: msg.blockId,
+              data: JSON.parse(output.text),
+            })
+          } catch {
+            // If it's not valid JSON, send the raw text
+            send(ws, { type: 'data', blockId: msg.blockId, data: output.text })
+          }
+        }
+        if (output.type === 'error') {
+          send(ws, {
+            type: 'error',
+            blockId: msg.blockId,
+            error: output.text ?? 'Unknown error',
+          })
+        }
+      }
+    }
+
+    if (msg.type === 'list_vars') {
+      const listCode = `[...__tw.__userVars]`
+      for await (const output of kernel.runCode(msg.notebookId, msg.blockId, listCode)) {
+        if (output.type === 'return' && output.text) {
+          try {
+            send(ws, {
+              type: 'vars',
+              blockId: msg.blockId,
+              vars: JSON.parse(output.text) as string[],
+            })
+          } catch {
+            send(ws, { type: 'vars', blockId: msg.blockId, vars: [] })
+          }
+        }
+      }
+    }
+
     if (msg.type === 'restart') {
       await kernel.restart(msg.notebookId)
       send(ws, { type: 'kernel_ready', notebookId: msg.notebookId })

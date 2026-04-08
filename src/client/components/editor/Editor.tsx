@@ -22,6 +22,7 @@ import { useNotebookStore } from '@store/notebook.store'
 
 import { BlockWrapper } from './BlockWrapper'
 import { CodeBlock } from './blocks/CodeBlock'
+import { DisplayBlock } from './blocks/DisplayBlock'
 import { DividerBlock } from './blocks/DividerBlock'
 import { HeadingBlock } from './blocks/HeadingBlock'
 import { ShellBlock } from './blocks/ShellBlock'
@@ -271,6 +272,14 @@ export function Editor() {
                       isRunning={runningBlock === block.id}
                       onChange={(content) => updateBlock(block.id, { content })}
                       onRun={() => runShell(activeNotebookId, block.id, block.content)}
+                    />
+                  )}
+                  {block.type === 'display' && (
+                    <DisplayBlock
+                      blockId={block.id}
+                      notebookId={activeNotebookId}
+                      config={block.displayConfig ?? { variable: '', chartType: 'table' }}
+                      onConfigChange={(config) => updateBlock(block.id, { displayConfig: config })}
                     />
                   )}
                   {block.type === 'divider' && <DividerBlock />}

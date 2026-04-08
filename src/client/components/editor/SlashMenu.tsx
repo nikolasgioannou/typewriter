@@ -1,5 +1,5 @@
 import * as Popover from '@radix-ui/react-popover'
-import { Code2, Heading1, Heading2, Heading3, Minus, Terminal } from 'lucide-react'
+import { BarChart3, Code2, Heading1, Heading2, Heading3, Minus, Terminal } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { BlockType } from '@shared/notebook'
@@ -42,6 +42,12 @@ const menuItems: SlashMenuItem[] = [
     label: 'Shell',
     aliases: ['shell', 'terminal', 'bash', 'sh', '$'],
     icon: <Terminal size={16} />,
+  },
+  {
+    type: 'display',
+    label: 'Display',
+    aliases: ['display', 'chart', 'graph', 'table', 'data', 'plot', 'visualize'],
+    icon: <BarChart3 size={16} />,
   },
   {
     type: 'divider',

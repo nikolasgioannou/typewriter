@@ -55,7 +55,7 @@ describe('kernel', () => {
     const outputs = await collectOutputs(
       nbId,
       'b7',
-      'const result = await Promise.resolve("async"); result'
+      'const result = await Promise.resolve("async")\nresult'
     )
     const ret = outputs.find((o) => o.type === 'return')
     expect(ret?.text).toBe('async')

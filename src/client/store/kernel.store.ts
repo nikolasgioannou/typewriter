@@ -10,11 +10,15 @@ interface KernelState {
   status: Record<string, KernelStatus>
   runningBlock: string | null
   ws: WebSocket | null
+  displayData: Record<string, unknown>
+  availableVars: Record<string, string[]>
 
   connect: (notebookId: string) => void
   disconnect: () => void
   runBlock: (notebookId: string, blockId: string, code: string) => void
   runShell: (notebookId: string, blockId: string, command: string) => void
+  evalVariable: (notebookId: string, blockId: string, expression: string) => void
+  listVars: (notebookId: string, blockId: string) => void
   runAll: (notebookId: string) => void
   restartKernel: (notebookId: string) => void
   setStatus: (notebookId: string, status: KernelStatus) => void
@@ -29,6 +33,8 @@ export const useKernelStore = create<KernelState>((set, get) => ({
   status: {},
   runningBlock: null,
   ws: null,
+  displayData: {},
+  availableVars: {},
 
   connect: (notebookId: string) => {
     const existing = get().ws
@@ -93,6 +99,18 @@ export const useKernelStore = create<KernelState>((set, get) => ({
         }))
       }
 
+      if (msg.type === 'data') {
+        set((state) => ({
+          displayData: { ...state.displayData, [msg.blockId]: msg.data },
+        }))
+      }
+
+      if (msg.type === 'vars') {
+        set((state) => ({
+          availableVars: { ...state.availableVars, [msg.blockId]: msg.vars },
+        }))
+      }
+
       if (msg.type === 'kernel_ready') {
         set((state) => ({ status: { ...state.status, [msg.notebookId]: 'ready' } }))
       }
@@ -144,6 +162,22 @@ export const useKernelStore = create<KernelState>((set, get) => ({
     }))
 
     const msg: ClientMessage = { type: 'shell', notebookId, blockId, command }
+    ws.send(JSON.stringify(msg))
+  },
+
+  evalVariable: (notebookId, blockId, expression) => {
+    const { ws } = get()
+    if (!ws || ws.readyState !== WebSocket.OPEN) return
+
+    const msg: ClientMessage = { type: 'eval', notebookId, blockId, expression }
+    ws.send(JSON.stringify(msg))
+  },
+
+  listVars: (notebookId, blockId) => {
+    const { ws } = get()
+    if (!ws || ws.readyState !== WebSocket.OPEN) return
+
+    const msg: ClientMessage = { type: 'list_vars', notebookId, blockId }
     ws.send(JSON.stringify(msg))
   },
 

@@ -11,11 +11,20 @@ const OutputSchema = z.object({
 
 const BlockSchema: z.ZodType<Block> = z.object({
   id: z.string(),
-  type: z.enum(['text', 'heading1', 'heading2', 'heading3', 'code', 'shell', 'divider']),
+  type: z.enum(['text', 'heading1', 'heading2', 'heading3', 'code', 'shell', 'display', 'divider']),
   content: z.string(),
   outputs: z.array(OutputSchema).optional(),
   executionCount: z.number().optional(),
   durationMs: z.number().optional(),
+  displayConfig: z
+    .object({
+      variable: z.string(),
+      chartType: z.enum(['table', 'line', 'bar', 'area', 'scatter', 'pie']),
+      xKey: z.string().optional(),
+      yKey: z.string().optional(),
+      title: z.string().optional(),
+    })
+    .optional(),
 })
 
 const NotebookSchema: z.ZodType<Notebook> = z.object({

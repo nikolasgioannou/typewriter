@@ -12,5 +12,8 @@ export {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './dropdown-menu'
+export { Input } from './input'
 export { ScrollArea } from './scroll-area'
+export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select'
 export { Separator } from './separator'
+export { ToggleGroup, ToggleGroupItem } from './toggle-group'

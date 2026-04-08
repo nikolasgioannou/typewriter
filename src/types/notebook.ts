@@ -1,4 +1,22 @@
-export type BlockType = 'text' | 'heading1' | 'heading2' | 'heading3' | 'code' | 'shell' | 'divider'
+export type BlockType =
+  | 'text'
+  | 'heading1'
+  | 'heading2'
+  | 'heading3'
+  | 'code'
+  | 'shell'
+  | 'display'
+  | 'divider'
+
+export type ChartType = 'table' | 'line' | 'bar' | 'area' | 'scatter' | 'pie'
+
+export interface DisplayConfig {
+  variable: string
+  chartType: ChartType
+  xKey?: string
+  yKey?: string
+  title?: string
+}
 
 export type OutputType = 'stdout' | 'stderr' | 'return' | 'error'
 
@@ -15,6 +33,7 @@ export interface Block {
   outputs?: Output[]
   executionCount?: number
   durationMs?: number
+  displayConfig?: DisplayConfig
 }
 
 export interface Notebook {

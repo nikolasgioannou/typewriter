@@ -3,8 +3,10 @@
 import { createRequire } from 'node:module'
 
 const __tw = globalThis as any
+const __userVars = new Set<string>()
 const require = createRequire(process.cwd() + '/')
 ;(__tw as any).require = require
+;(__tw as any).__userVars = __userVars
 
 function emit(data: Record<string, unknown>) {
   process.stdout.write(JSON.stringify(data) + '\n')
@@ -44,10 +46,15 @@ function wrapForReturn(code: string): string {
 }
 
 function rewriteDeclarations(code: string): string {
-  return code.replace(
-    /^(var|let|const)\s+(\w+)\s*=/gm,
-    (_match, _keyword, name) => `__tw.${name} = ${name} =`
-  )
+  const names: string[] = []
+  const rewritten = code.replace(/^(var|let|const)\s+(\w+)\s*=/gm, (_match, _keyword, name) => {
+    names.push(name)
+    return `var ${name} = __tw.${name} =`
+  })
+  if (names.length === 0) return rewritten
+  // Put tracking on its own line at the top so wrapForReturn only touches the last line
+  const tracking = names.map((n) => `__userVars.add('${n}')`).join('; ')
+  return `${tracking}\n${rewritten}`
 }
 
 function rewriteImports(code: string): string {
