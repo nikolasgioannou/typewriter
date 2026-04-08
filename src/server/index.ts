@@ -5,14 +5,13 @@ import { appRouter } from '@server/api/router'
 import { shutdown } from '@server/kernel/manager'
 import { wsHandler } from '@server/ws/handler'
 
-const port = Number(process.env['PORT'] ?? 3000)
+const basePort = Number(process.env['PORT'] ?? 8888)
 
-const server = Bun.serve({
-  port,
+const serverOptions = {
   routes: {
     '/': homepage,
   },
-  async fetch(req, server) {
+  async fetch(req: Request, server: { upgrade: (req: Request) => boolean }) {
     const url = new URL(req.url)
 
     if (url.pathname === '/ws') {
@@ -37,7 +36,25 @@ const server = Bun.serve({
     hmr: true,
     console: true,
   },
-})
+}
+
+function startServer(port: number, maxAttempts = 10): ReturnType<typeof Bun.serve> {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return Bun.serve({ ...serverOptions, port: port + attempt })
+    } catch (err) {
+      if (err instanceof Error && 'code' in err && err.code === 'EADDRINUSE') {
+        continue
+      }
+      throw err
+    }
+  }
+  throw new Error(
+    `Could not find an open port after trying ${basePort}-${basePort + maxAttempts - 1}`
+  )
+}
+
+const server = startServer(basePort)
 
 console.log(`
   typewriter
