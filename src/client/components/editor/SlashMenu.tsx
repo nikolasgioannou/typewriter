@@ -8,17 +8,54 @@ import { cn } from '@lib/cn'
 interface SlashMenuItem {
   type: BlockType
   label: string
+  aliases: string[]
   icon: React.ReactNode
   shortcut?: string
 }
 
 const menuItems: SlashMenuItem[] = [
-  { type: 'text', label: 'Text', icon: <Type size={16} />, shortcut: '' },
-  { type: 'heading1', label: 'Heading 1', icon: <Heading1 size={16} />, shortcut: '#' },
-  { type: 'heading2', label: 'Heading 2', icon: <Heading2 size={16} />, shortcut: '##' },
-  { type: 'heading3', label: 'Heading 3', icon: <Heading3 size={16} />, shortcut: '###' },
-  { type: 'code', label: 'Code', icon: <Code2 size={16} />, shortcut: '```' },
-  { type: 'divider', label: 'Divider', icon: <Minus size={16} />, shortcut: '---' },
+  {
+    type: 'text',
+    label: 'Text',
+    aliases: ['text', 'paragraph', 'p'],
+    icon: <Type size={16} />,
+    shortcut: '',
+  },
+  {
+    type: 'heading1',
+    label: 'Heading 1',
+    aliases: ['heading 1', 'h1', '#'],
+    icon: <Heading1 size={16} />,
+    shortcut: '#',
+  },
+  {
+    type: 'heading2',
+    label: 'Heading 2',
+    aliases: ['heading 2', 'h2', '##'],
+    icon: <Heading2 size={16} />,
+    shortcut: '##',
+  },
+  {
+    type: 'heading3',
+    label: 'Heading 3',
+    aliases: ['heading 3', 'h3', '###'],
+    icon: <Heading3 size={16} />,
+    shortcut: '###',
+  },
+  {
+    type: 'code',
+    label: 'Code',
+    aliases: ['code', 'typescript', 'ts', '```'],
+    icon: <Code2 size={16} />,
+    shortcut: '```',
+  },
+  {
+    type: 'divider',
+    label: 'Divider',
+    aliases: ['divider', 'hr', 'line', '---'],
+    icon: <Minus size={16} />,
+    shortcut: '---',
+  },
 ]
 
 interface SlashCommandMenuProps {
@@ -40,7 +77,7 @@ export function SlashCommandMenu({
   const itemsRef = useRef<HTMLDivElement>(null)
 
   const filtered = menuItems.filter((item) =>
-    item.label.toLowerCase().includes(filter.toLowerCase())
+    item.aliases.some((a) => a.includes(filter.toLowerCase()))
   )
 
   // Reset selection when filter changes, close if no results

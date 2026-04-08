@@ -19,23 +19,19 @@ export function useBlockFocus() {
       const focusable = el.querySelector<HTMLElement>(
         '[contenteditable], textarea, .cm-content, input'
       )
-      focusable?.focus()
+      if (focusable) {
+        focusable.focus()
+        const selection = window.getSelection()
+        if (selection && focusable.childNodes.length > 0) {
+          const range = document.createRange()
+          range.selectNodeContents(focusable)
+          range.collapse(false)
+          selection.removeAllRanges()
+          selection.addRange(range)
+        }
+      }
     }
   }, [])
 
-  const focusBlockByIndex = useCallback(
-    (blockIds: string[], currentId: string, direction: 'up' | 'down') => {
-      const currentIndex = blockIds.indexOf(currentId)
-      if (currentIndex === -1) return
-
-      const nextIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
-      const nextId = blockIds[nextIndex]
-      if (nextId) {
-        focusBlock(nextId)
-      }
-    },
-    [focusBlock]
-  )
-
-  return { registerBlock, focusBlock, focusBlockByIndex, focusedBlockRef }
+  return { registerBlock, focusBlock, focusedBlockRef }
 }

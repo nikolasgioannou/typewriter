@@ -36,7 +36,7 @@ export function Editor() {
     reorderBlocks,
   } = useNotebookStore()
   const { runningBlock, runBlock } = useKernelStore()
-  const { registerBlock, focusBlock, focusBlockByIndex } = useBlockFocus()
+  const { registerBlock, focusBlock } = useBlockFocus()
   const titleRef = useRef<HTMLInputElement>(null)
 
   const { data: notebookData } = trpc.notebooks.byId.useQuery(
@@ -72,7 +72,7 @@ export function Editor() {
 
     // Otherwise append a new text block
     const newId = appendBlock('text')
-    setTimeout(() => focusBlock(newId), 50)
+    setTimeout(() => focusBlock(newId), 100)
   }, [notebook, appendBlock, focusBlock])
 
   if (!notebook || !activeNotebookId) {
@@ -97,7 +97,7 @@ export function Editor() {
 
   const handleAddBlock = (afterId: string, type: BlockType) => {
     const newId = addBlock(afterId, type)
-    setTimeout(() => focusBlock(newId), 50)
+    setTimeout(() => focusBlock(newId), 100)
   }
 
   const handleRemoveBlock = (blockId: string) => {
@@ -138,9 +138,9 @@ export function Editor() {
               reorderBlocks(blocks.length - 1, 0)
             }
             if (after) {
-              updateBlock(newId, { content: `<p>${after}</p>` })
+              updateBlock(newId, { content: after })
             }
-            setTimeout(() => focusBlock(newId), 50)
+            setTimeout(() => focusBlock(newId), 100)
           }
         }}
         className="text-fg-primary placeholder:text-fg-tertiary mb-4 w-full bg-transparent text-4xl font-bold"
@@ -153,9 +153,6 @@ export function Editor() {
             <BlockWrapper
               key={block.id}
               id={block.id}
-              blockType={block.type}
-              onChangeType={(type) => updateBlock(block.id, { type, content: '' })}
-              onDelete={() => handleRemoveBlock(block.id)}
               registerRef={(el) => registerBlock(block.id, el)}
             >
               {block.type === 'code' && (
@@ -185,9 +182,7 @@ export function Editor() {
                   level={block.type as 'heading1' | 'heading2' | 'heading3'}
                   onChange={(content) => updateBlock(block.id, { content })}
                   onEnter={() => handleAddBlock(block.id, 'text')}
-                  onBackspace={() => {
-                    focusBlockByIndex(blockIds, block.id, 'up')
-                  }}
+                  onBackspace={() => handleRemoveBlock(block.id)}
                 />
               )}
               {block.type === 'divider' && <DividerBlock />}
