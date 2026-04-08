@@ -1,0 +1,12 @@
+node_modules
+public/
+dist/
+.env
+.env.local
+.env.*.local
+*.tsbuildinfo
+.eslintcache
+.cache
+.DS_Store
+coverage
+*.lcov
