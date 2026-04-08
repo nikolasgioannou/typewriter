@@ -5,7 +5,7 @@ export function Kbd({ className, ...props }: HTMLAttributes<HTMLElement>) {
   return (
     <kbd
       className={cn(
-        'border-border bg-bg-tertiary text-fg-tertiary inline-flex h-7 items-center justify-center rounded-md border px-2 font-mono text-xs leading-none',
+        'text-fg-tertiary inline-flex items-center gap-0.5 font-mono text-xs',
         className
       )}
       {...props}
