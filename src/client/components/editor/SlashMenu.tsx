@@ -1,34 +1,187 @@
-import type { BlockType } from '@shared/notebook'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@ui/index'
+import * as Popover from '@radix-ui/react-popover'
+import { Code2, Heading1, Heading2, Heading3, Minus, Type } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
-interface SlashMenuProps {
+import type { BlockType } from '@shared/notebook'
+import { cn } from '@lib/cn'
+
+interface SlashMenuItem {
+  type: BlockType
+  label: string
+  icon: React.ReactNode
+  shortcut?: string
+}
+
+const menuItems: SlashMenuItem[] = [
+  { type: 'text', label: 'Text', icon: <Type size={16} />, shortcut: '' },
+  { type: 'heading1', label: 'Heading 1', icon: <Heading1 size={16} />, shortcut: '#' },
+  { type: 'heading2', label: 'Heading 2', icon: <Heading2 size={16} />, shortcut: '##' },
+  { type: 'heading3', label: 'Heading 3', icon: <Heading3 size={16} />, shortcut: '###' },
+  { type: 'code', label: 'Code', icon: <Code2 size={16} />, shortcut: '```' },
+  { type: 'divider', label: 'Divider', icon: <Minus size={16} />, shortcut: '---' },
+]
+
+interface SlashCommandMenuProps {
+  open: boolean
+  onSelect: (type: BlockType) => void
+  onClose: () => void
+  anchorRef: React.RefObject<HTMLElement | null>
+  filter: string
+}
+
+export function SlashCommandMenu({
+  open,
+  onSelect,
+  onClose,
+  anchorRef,
+  filter,
+}: SlashCommandMenuProps) {
+  const [selectedIndex, setSelectedIndex] = useState(0)
+  const itemsRef = useRef<HTMLDivElement>(null)
+
+  const filtered = menuItems.filter((item) =>
+    item.label.toLowerCase().includes(filter.toLowerCase())
+  )
+
+  // Reset selection when filter changes, close if no results
+  useEffect(() => {
+    setSelectedIndex(0)
+    if (filter && filtered.length === 0) {
+      onClose()
+    }
+  }, [filter, filtered.length, onClose])
+
+  const handleSelect = useCallback(
+    (type: BlockType) => {
+      onSelect(type)
+      onClose()
+    },
+    [onSelect, onClose]
+  )
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (!open) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setSelectedIndex((i) => (i + 1) % filtered.length)
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setSelectedIndex((i) => (i - 1 + filtered.length) % filtered.length)
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        const item = filtered[selectedIndex]
+        if (item) handleSelect(item.type)
+      } else if (e.key === 'Escape') {
+        e.preventDefault()
+        onClose()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown, true)
+    return () => window.removeEventListener('keydown', handleKeyDown, true)
+  }, [open, filtered, selectedIndex, handleSelect, onClose])
+
+  // Scroll selected item into view
+  useEffect(() => {
+    if (!itemsRef.current) return
+    const selected = itemsRef.current.children[selectedIndex] as HTMLElement | undefined
+    selected?.scrollIntoView({ block: 'nearest' })
+  }, [selectedIndex])
+
+  if (filtered.length === 0) return null
+
+  return (
+    <Popover.Root open={open} onOpenChange={(o) => !o && onClose()}>
+      <Popover.Anchor asChild>
+        <span
+          ref={anchorRef as React.RefObject<HTMLSpanElement>}
+          style={{ position: 'absolute', pointerEvents: 'none' }}
+        />
+      </Popover.Anchor>
+      <Popover.Portal>
+        <Popover.Content
+          side="bottom"
+          align="start"
+          sideOffset={4}
+          className="bg-bg-primary border-border z-50 w-64 overflow-hidden rounded-lg border shadow-lg"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
+          <div ref={itemsRef} className="max-h-72 overflow-y-auto p-1">
+            {filtered.map((item, i) => (
+              <button
+                key={item.type}
+                className={cn(
+                  'flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-sm transition-colors',
+                  i === selectedIndex
+                    ? 'bg-bg-tertiary text-fg-primary'
+                    : 'text-fg-secondary hover:bg-bg-tertiary hover:text-fg-primary'
+                )}
+                onMouseEnter={() => setSelectedIndex(i)}
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  handleSelect(item.type)
+                }}
+              >
+                <span className="text-fg-tertiary flex h-6 w-6 shrink-0 items-center justify-center">
+                  {item.icon}
+                </span>
+                <span className="flex-1 text-left">{item.label}</span>
+                {item.shortcut && (
+                  <span className="text-fg-tertiary font-mono text-xs">{item.shortcut}</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  )
+}
+
+// Re-export a simple dropdown version for the BlockWrapper + button
+interface SlashMenuDropdownProps {
   onSelect: (type: BlockType) => void
   children: React.ReactNode
 }
 
-const menuItems: Array<{ type: BlockType; label: string; description: string }> = [
-  { type: 'code', label: 'Code', description: 'TypeScript code cell' },
-  { type: 'text', label: 'Text', description: 'Plain text block' },
-  { type: 'heading1', label: 'Heading 1', description: 'Large heading' },
-  { type: 'heading2', label: 'Heading 2', description: 'Medium heading' },
-  { type: 'heading3', label: 'Heading 3', description: 'Small heading' },
-  { type: 'divider', label: 'Divider', description: 'Horizontal rule' },
-]
+export function SlashMenuDropdown({ onSelect, children }: SlashMenuDropdownProps) {
+  const [open, setOpen] = useState(false)
 
-export function SlashMenu({ onSelect, children }: SlashMenuProps) {
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
-      <DropdownMenuContent align="start">
-        {menuItems.map((item) => (
-          <DropdownMenuItem key={item.type} onClick={() => onSelect(item.type)}>
-            <div>
-              <div className="text-sm font-medium">{item.label}</div>
-              <div className="text-fg-tertiary text-xs">{item.description}</div>
-            </div>
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Trigger asChild>{children}</Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          side="bottom"
+          align="start"
+          sideOffset={4}
+          className="bg-bg-primary border-border z-50 w-64 overflow-hidden rounded-lg border shadow-lg"
+        >
+          <div className="max-h-72 overflow-y-auto p-1">
+            {menuItems.map((item) => (
+              <button
+                key={item.type}
+                className="text-fg-secondary hover:bg-bg-tertiary hover:text-fg-primary flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-sm transition-colors"
+                onClick={() => {
+                  onSelect(item.type)
+                  setOpen(false)
+                }}
+              >
+                <span className="text-fg-tertiary flex h-6 w-6 shrink-0 items-center justify-center">
+                  {item.icon}
+                </span>
+                <span className="flex-1 text-left">{item.label}</span>
+                {item.shortcut && (
+                  <span className="text-fg-tertiary font-mono text-xs">{item.shortcut}</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   )
 }

@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@ui/index'
 
-import { SlashMenu } from './SlashMenu'
+import { SlashMenuDropdown } from './SlashMenu'
 
 interface BlockWrapperProps {
   id: string
@@ -52,11 +52,11 @@ export function BlockWrapper({
       className={cn('group relative py-1', isDragging && 'z-10 opacity-50')}
     >
       <div className="absolute top-2 -left-10 flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-        <SlashMenu onSelect={onAddBlock}>
+        <SlashMenuDropdown onSelect={onAddBlock}>
           <button className="text-fg-tertiary hover:bg-bg-tertiary hover:text-fg-secondary flex h-6 w-6 items-center justify-center rounded">
             +
           </button>
-        </SlashMenu>
+        </SlashMenuDropdown>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button

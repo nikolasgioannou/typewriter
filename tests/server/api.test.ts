@@ -35,8 +35,7 @@ describe('notebooks.create', () => {
     createdId = result.id
     expect(result.id).toHaveLength(8)
     expect(result.title).toBe('Test Notebook')
-    expect(result.blocks).toHaveLength(1)
-    expect(result.blocks[0]?.type).toBe('code')
+    expect(result.blocks).toHaveLength(0)
 
     const file = Bun.file(join(tmpDir, `${createdId}.tw.json`))
     expect(await file.exists()).toBe(true)
@@ -68,7 +67,7 @@ describe('notebooks.save', () => {
 
     const result = await caller.notebooks.save({ id: createdId, notebook: updated })
     expect(result.title).toBe('Updated Title')
-    expect(result.blocks).toHaveLength(2)
+    expect(result.blocks).toHaveLength(1)
   })
 })
 

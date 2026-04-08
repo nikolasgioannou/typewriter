@@ -7,7 +7,7 @@ import {
   useSensors,
 } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 
 import type { BlockType } from '@shared/notebook'
 import { useAutosave } from '@hooks/useAutosave'
@@ -31,11 +31,13 @@ export function Editor() {
     updateBlock,
     updateTitle,
     addBlock,
+    appendBlock,
     removeBlock,
     reorderBlocks,
   } = useNotebookStore()
   const { runningBlock, runBlock } = useKernelStore()
   const { registerBlock, focusBlock, focusBlockByIndex } = useBlockFocus()
+  const titleRef = useRef<HTMLInputElement>(null)
 
   const { data: notebookData } = trpc.notebooks.byId.useQuery(
     { id: activeNotebookId ?? '' },
@@ -52,6 +54,26 @@ export function Editor() {
   }, [notebookData, notebook?.id, setNotebook])
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
+
+  const handleClickBelow = useCallback(() => {
+    if (!notebook) return
+
+    const lastBlock = notebook.blocks[notebook.blocks.length - 1]
+
+    // If last block is an empty text block, focus it
+    if (
+      lastBlock &&
+      lastBlock.type === 'text' &&
+      !lastBlock.content.replace(/<[^>]*>/g, '').trim()
+    ) {
+      focusBlock(lastBlock.id)
+      return
+    }
+
+    // Otherwise append a new text block
+    const newId = appendBlock('text')
+    setTimeout(() => focusBlock(newId), 50)
+  }, [notebook, appendBlock, focusBlock])
 
   if (!notebook || !activeNotebookId) {
     return (
@@ -84,15 +106,43 @@ export function Editor() {
     const prevId = blockIds[idx - 1]
     if (prevId) {
       setTimeout(() => focusBlock(prevId), 50)
+    } else {
+      // First block — focus the title and place cursor at the end
+      setTimeout(() => {
+        titleRef.current?.focus()
+        const len = titleRef.current?.value.length ?? 0
+        titleRef.current?.setSelectionRange(len, len)
+      }, 50)
     }
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 pl-14">
+    <div className="mx-auto flex min-h-full max-w-3xl flex-col px-4 py-8 pl-14">
       <input
+        ref={titleRef}
         type="text"
         value={notebook.title}
         onChange={(e) => updateTitle(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            const input = e.currentTarget
+            const pos = input.selectionStart ?? notebook.title.length
+            const before = notebook.title.slice(0, pos)
+            const after = notebook.title.slice(pos)
+            updateTitle(before)
+            const newId = appendBlock('text')
+            // Move the new block to the top
+            const blocks = useNotebookStore.getState().notebook?.blocks
+            if (blocks) {
+              reorderBlocks(blocks.length - 1, 0)
+            }
+            if (after) {
+              updateBlock(newId, { content: `<p>${after}</p>` })
+            }
+            setTimeout(() => focusBlock(newId), 50)
+          }
+        }}
         className="text-fg-primary placeholder:text-fg-tertiary mb-4 w-full bg-transparent text-4xl font-bold"
         placeholder="Untitled"
       />
@@ -125,6 +175,7 @@ export function Editor() {
                   onChange={(content) => updateBlock(block.id, { content })}
                   onEnter={() => handleAddBlock(block.id, 'text')}
                   onBackspace={() => handleRemoveBlock(block.id)}
+                  onSlashSelect={(type) => updateBlock(block.id, { type, content: '' })}
                 />
               )}
               {(block.type === 'heading1' ||
@@ -145,6 +196,8 @@ export function Editor() {
           ))}
         </SortableContext>
       </DndContext>
+
+      <div className="min-h-32 flex-1 cursor-text" onClick={handleClickBelow} />
     </div>
   )
 }

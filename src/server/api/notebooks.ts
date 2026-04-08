@@ -58,13 +58,7 @@ export const notebooksRouter = router({
       title: input.title,
       created: Date.now(),
       updated: Date.now(),
-      blocks: [
-        {
-          id: crypto.randomUUID(),
-          type: 'code',
-          content: '',
-        },
-      ],
+      blocks: [],
     }
 
     await Bun.write(notebookPath(id), JSON.stringify(notebook, null, 2))

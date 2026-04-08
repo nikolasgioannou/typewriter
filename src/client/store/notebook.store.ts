@@ -14,6 +14,7 @@ interface NotebookState {
   setNotebook: (notebook: Notebook | null) => void
   updateBlock: (blockId: string, updates: Partial<Block>) => void
   addBlock: (afterBlockId: string, type: BlockType) => string
+  appendBlock: (type: BlockType) => string
   removeBlock: (blockId: string) => void
   reorderBlocks: (fromIndex: number, toIndex: number) => void
   updateTitle: (title: string) => void
@@ -60,6 +61,19 @@ export const useNotebookStore = create<NotebookState>((set) => ({
       const blocks = [...state.notebook.blocks]
       blocks.splice(index + 1, 0, newBlock)
       return { notebook: { ...state.notebook, blocks }, isDirty: true }
+    })
+    return newId
+  },
+
+  appendBlock: (type) => {
+    const newId = generateId()
+    set((state) => {
+      if (!state.notebook) return state
+      const newBlock: Block = { id: newId, type, content: '' }
+      return {
+        notebook: { ...state.notebook, blocks: [...state.notebook.blocks, newBlock] },
+        isDirty: true,
+      }
     })
     return newId
   },
