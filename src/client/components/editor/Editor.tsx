@@ -156,7 +156,6 @@ export function Editor() {
               blockType={block.type}
               onChangeType={(type) => updateBlock(block.id, { type, content: '' })}
               onDelete={() => handleRemoveBlock(block.id)}
-              onAddBlock={(type) => handleAddBlock(block.id, type)}
               registerRef={(el) => registerBlock(block.id, el)}
             >
               {block.type === 'code' && (

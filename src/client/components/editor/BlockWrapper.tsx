@@ -12,15 +12,12 @@ import {
   DropdownMenuTrigger,
 } from '@ui/index'
 
-import { SlashMenuDropdown } from './SlashMenu'
-
 interface BlockWrapperProps {
   id: string
   blockType: BlockType
   children: ReactNode
   onChangeType: (type: BlockType) => void
   onDelete: () => void
-  onAddBlock: (type: BlockType) => void
   registerRef: (el: HTMLElement | null) => void
 }
 
@@ -30,7 +27,6 @@ export function BlockWrapper({
   children,
   onChangeType,
   onDelete,
-  onAddBlock,
   registerRef,
 }: BlockWrapperProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -51,12 +47,7 @@ export function BlockWrapper({
       style={style}
       className={cn('group relative py-1', isDragging && 'z-10 opacity-50')}
     >
-      <div className="absolute top-2 -left-10 flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-        <SlashMenuDropdown onSelect={onAddBlock}>
-          <button className="text-fg-tertiary hover:bg-bg-tertiary hover:text-fg-secondary flex h-6 w-6 items-center justify-center rounded">
-            +
-          </button>
-        </SlashMenuDropdown>
+      <div className="absolute top-2 -left-6 flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
