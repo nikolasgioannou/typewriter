@@ -63,6 +63,13 @@ export function Editor() {
     }
   }, [notebookData, notebook?.id, setNotebook])
 
+  // Focus title when switching to a new empty notebook
+  useEffect(() => {
+    if (notebook && !notebook.title && notebook.blocks.length === 0) {
+      setTimeout(() => titleRef.current?.focus(), 200)
+    }
+  }, [notebook?.id])
+
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
 
   // Keyboard: delete selected blocks, escape to clear

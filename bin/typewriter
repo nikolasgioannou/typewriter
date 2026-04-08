@@ -59,34 +59,5 @@ case "${1:-}" in
     ;;
 esac
 
-# Start the server and capture output to detect the port
 cd "$TYPEWRITER_DIR"
-PIPE=$(mktemp -u)
-mkfifo "$PIPE"
-
-bun run src/server/index.ts 2>&1 | tee "$PIPE" &
-SERVER_PID=$!
-
-# Read output until we find the port
-URL=""
-while IFS= read -r line; do
-  echo "$line"
-  if [[ "$line" =~ http://localhost:([0-9]+) ]]; then
-    URL="http://localhost:${BASH_REMATCH[1]}"
-    break
-  fi
-done < "$PIPE"
-
-rm -f "$PIPE"
-
-# Open browser
-if [ -n "$URL" ]; then
-  if command -v open &> /dev/null; then
-    open "$URL"
-  elif command -v xdg-open &> /dev/null; then
-    xdg-open "$URL"
-  fi
-fi
-
-# Wait for server process
-wait $SERVER_PID
+exec bun run src/server/index.ts

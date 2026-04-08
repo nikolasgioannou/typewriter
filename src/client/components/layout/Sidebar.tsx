@@ -1,4 +1,4 @@
-import { Ellipsis, FileText, Plus, Trash2 } from 'lucide-react'
+import { Copy, Ellipsis, FileText, Plus, Trash2 } from 'lucide-react'
 
 import { cn } from '@lib/cn'
 import { trpc } from '@lib/trpc'
@@ -16,11 +16,23 @@ import {
   ScrollArea,
 } from '@ui/index'
 
-function NotebookMenu({ onDelete, children }: { onDelete: () => void; children: React.ReactNode }) {
+function NotebookMenu({
+  onDuplicate,
+  onDelete,
+  children,
+}: {
+  onDuplicate: () => void
+  onDelete: () => void
+  children: React.ReactNode
+}) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       <DropdownMenuContent align="start">
+        <DropdownMenuItem onClick={onDuplicate}>
+          <Copy size={14} className="mr-2" />
+          Duplicate
+        </DropdownMenuItem>
         <DropdownMenuItem className="text-kernel-error" onClick={onDelete}>
           <Trash2 size={14} className="mr-2" />
           Delete
@@ -39,8 +51,16 @@ export function Sidebar() {
   } = useNotebookStore()
   const { data: notebooks } = trpc.notebooks.list.useQuery()
   const createMutation = trpc.notebooks.create.useMutation()
+  const duplicateMutation = trpc.notebooks.duplicate.useMutation()
   const deleteMutation = trpc.notebooks.delete.useMutation()
   const utils = trpc.useUtils()
+
+  const handleDuplicate = async (id: string) => {
+    const notebook = await duplicateMutation.mutateAsync({ id })
+    await utils.notebooks.list.invalidate()
+    setActiveNotebook(notebook.id)
+    setNotebook(notebook)
+  }
 
   const handleCreate = async () => {
     const title = ''
@@ -97,7 +117,10 @@ export function Sidebar() {
                         'New notebook'}
                     </span>
                   </button>
-                  <NotebookMenu onDelete={() => handleDelete(nb.id)}>
+                  <NotebookMenu
+                    onDuplicate={() => handleDuplicate(nb.id)}
+                    onDelete={() => handleDelete(nb.id)}
+                  >
                     <IconButton className="mr-1 shrink-0 opacity-0 group-hover:opacity-100">
                       <Ellipsis size={14} />
                     </IconButton>
@@ -105,6 +128,10 @@ export function Sidebar() {
                 </div>
               </ContextMenuTrigger>
               <ContextMenuContent>
+                <ContextMenuItem onClick={() => handleDuplicate(nb.id)}>
+                  <Copy size={14} className="mr-2" />
+                  Duplicate
+                </ContextMenuItem>
                 <ContextMenuItem className="text-kernel-error" onClick={() => handleDelete(nb.id)}>
                   <Trash2 size={14} className="mr-2" />
                   Delete

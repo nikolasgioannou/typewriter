@@ -54,17 +54,18 @@ function startServer(port: number, maxAttempts = 10): ReturnType<typeof Bun.serv
 
 const server = startServer(basePort)
 
+const url = `http://localhost:${server.port}`
+
 console.log(
-  [
-    '',
-    'typewriter',
-    `local       http://localhost:${server.port}`,
-    'kernel      ready',
-    '',
-    'Ctrl+C to stop',
-    '',
-  ].join('\n')
+  ['', 'typewriter', `local       ${url}`, 'kernel      ready', '', 'Ctrl+C to stop', ''].join('\n')
 )
+
+// Auto-open browser
+if (process.env['NO_OPEN'] !== '1') {
+  const platform = process.platform
+  const cmd = platform === 'darwin' ? 'open' : platform === 'win32' ? 'start' : 'xdg-open'
+  Bun.spawn([cmd, url], { stdout: 'ignore', stderr: 'ignore' })
+}
 
 process.on('SIGINT', () => {
   shutdown()

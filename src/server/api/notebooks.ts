@@ -77,6 +77,24 @@ export const notebooksRouter = router({
       return updated
     }),
 
+  duplicate: publicProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
+    const file = Bun.file(notebookPath(input.id))
+    if (!(await file.exists())) {
+      throw new Error(`Notebook "${input.id}" not found`)
+    }
+    const source = (await file.json()) as Notebook
+    const newId = crypto.randomUUID().slice(0, 8)
+    const notebook: Notebook = {
+      ...source,
+      id: newId,
+      title: source.title,
+      created: Date.now(),
+      updated: Date.now(),
+    }
+    await Bun.write(notebookPath(newId), JSON.stringify(notebook, null, 2))
+    return notebook
+  }),
+
   delete: publicProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
     const { unlink } = await import('node:fs/promises')
     const { cleanupNotebookEnv } = await import('@server/lib/notebook-env')
