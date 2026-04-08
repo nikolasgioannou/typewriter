@@ -1,0 +1,55 @@
+# Typewriter
+
+A local TypeScript notebook app — like Jupyter, but for TypeScript. Powered by [Bun](https://bun.sh).
+
+Write and execute TypeScript code cells, install npm packages, and run shell commands — all in a block-based editor that runs natively on your machine.
+
+## Features
+
+- **TypeScript code cells** — execute TypeScript natively via Bun. No compilation step. Variables persist across cells.
+- **Shell blocks** — run terminal commands like `bun add lodash` directly in the notebook.
+- **Per-notebook environments** — each notebook gets its own `node_modules`. Install packages in a shell block, import them in code cells.
+- **Block-based editor** — text, headings, code, shell, and divider blocks. Slash commands (`/`) to insert blocks. Drag to reorder.
+- **Auto-save** — notebooks save automatically as `.tw.json` files in your working directory.
+- **Dark mode** — follows your system preference.
+- **Fast** — kernel output is batched for instant rendering. 10,000 console.logs render in milliseconds.
+
+## Install
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nikolasgioannou/typewriter/main/install.sh | bash
+```
+
+Requires [Bun](https://bun.sh). The install script will install it for you if it's not already available.
+
+## Usage
+
+```bash
+# Start Typewriter
+typewriter
+
+# Check version
+typewriter --version
+
+# Update to latest
+typewriter --update
+```
+
+Typewriter starts a local server on port 8888 (auto-increments if taken) and opens your browser.
+
+Notebooks are saved as `.tw.json` files in the directory where you run `typewriter`.
+
+## Development
+
+```bash
+git clone https://github.com/nikolasgioannou/typewriter.git
+cd typewriter
+bun install
+bun dev
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
+
+## License
+
+[MIT](LICENSE)
