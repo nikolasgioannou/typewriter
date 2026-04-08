@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 @import './tokens.css';
 
+@source '../../**/*.{ts,tsx}';
+
 @theme {
   --color-bg-primary: hsl(var(--bg-primary));
   --color-bg-secondary: hsl(var(--bg-secondary));
