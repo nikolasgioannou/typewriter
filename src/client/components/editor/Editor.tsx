@@ -213,6 +213,7 @@ export function Editor() {
                       content={block.content}
                       outputs={block.outputs ?? []}
                       executionCount={block.executionCount}
+                      durationMs={block.durationMs}
                       isRunning={runningBlock === block.id}
                       onChange={(content) => updateBlock(block.id, { content })}
                       onRun={() => runBlock(activeNotebookId, block.id, block.content)}

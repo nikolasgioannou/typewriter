@@ -14,6 +14,7 @@ export interface Block {
   content: string
   outputs?: Output[]
   executionCount?: number
+  durationMs?: number
 }
 
 export interface Notebook {

@@ -6,6 +6,6 @@ export type ClientMessage =
 
 export type ServerMessage =
   | { type: 'output'; blockId: string; output: Output }
-  | { type: 'done'; blockId: string; executionCount: number }
+  | { type: 'done'; blockId: string; executionCount: number; durationMs?: number }
   | { type: 'error'; blockId: string; error: string }
   | { type: 'kernel_ready'; notebookId: string }

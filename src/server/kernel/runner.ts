@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-// Use globalThis as the shared scope for variable persistence
 const __tw = globalThis as any
 
 function emit(data: Record<string, unknown>) {
@@ -41,29 +40,52 @@ function wrapForReturn(code: string): string {
 }
 
 function rewriteDeclarations(code: string): string {
-  // Rewrite top-level var/let/const to assign to globalThis for persistence
-  // This is a simple heuristic that works for common notebook patterns
   return code.replace(
     /^(var|let|const)\s+(\w+)\s*=/gm,
     (_match, _keyword, name) => `__tw.${name} = ${name} =`
   )
 }
 
+// Output buffer — batches console.log/error calls into single messages
+let stdoutBuffer: string[] = []
+let stderrBuffer: string[] = []
+let flushScheduled = false
+let currentId: string | null = null
+
+function scheduleFlush() {
+  if (flushScheduled) return
+  flushScheduled = true
+  queueMicrotask(flushBuffers)
+}
+
+function flushBuffers() {
+  flushScheduled = false
+  if (!currentId) return
+
+  if (stdoutBuffer.length > 0) {
+    emit({ type: 'stdout', text: stdoutBuffer.join('\n'), id: currentId })
+    stdoutBuffer = []
+  }
+  if (stderrBuffer.length > 0) {
+    emit({ type: 'stderr', text: stderrBuffer.join('\n'), id: currentId })
+    stderrBuffer = []
+  }
+}
+
 async function execute(id: string, code: string) {
+  const startTime = performance.now()
+  currentId = id
+  stdoutBuffer = []
+  stderrBuffer = []
+
   console.log = (...args: unknown[]) => {
-    emit({
-      type: 'stdout',
-      text: args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join(' '),
-      id,
-    })
+    stdoutBuffer.push(args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join(' '))
+    scheduleFlush()
   }
 
   console.error = (...args: unknown[]) => {
-    emit({
-      type: 'stderr',
-      text: args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join(' '),
-      id,
-    })
+    stderrBuffer.push(args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join(' '))
+    scheduleFlush()
   }
 
   try {
@@ -71,6 +93,9 @@ async function execute(id: string, code: string) {
     const withReturn = wrapForReturn(rewritten)
     const wrapped = `(async () => {\n${withReturn}\n})()`
     const result = await (0, eval)(wrapped)
+
+    // Flush any remaining buffered output before emitting return/done
+    flushBuffers()
 
     if (result !== undefined) {
       emit({
@@ -80,6 +105,7 @@ async function execute(id: string, code: string) {
       })
     }
   } catch (err) {
+    flushBuffers()
     const error = err instanceof Error ? err : new Error(String(err))
     emit({
       type: 'error',
@@ -89,7 +115,8 @@ async function execute(id: string, code: string) {
   } finally {
     console.log = originalLog
     console.error = originalError
-    emit({ type: 'done', id })
+    currentId = null
+    emit({ type: 'done', id, durationMs: Math.round(performance.now() - startTime) })
   }
 }
 
@@ -110,7 +137,6 @@ async function readStdin() {
   }
 }
 
-// Expose __tw globally so eval'd code can access it
 __tw.__tw = __tw
 
 readStdin()

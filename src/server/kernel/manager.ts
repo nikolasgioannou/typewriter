@@ -5,6 +5,7 @@ export interface KernelOutput {
   type: 'stdout' | 'stderr' | 'return' | 'error' | 'done'
   text?: string
   id: string
+  durationMs?: number
 }
 
 interface KernelProcess {

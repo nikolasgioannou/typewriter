@@ -23,6 +23,7 @@ export const wsHandler = {
             type: 'done',
             blockId: msg.blockId,
             executionCount: kernel.getExecutionCount(msg.notebookId, msg.blockId),
+            durationMs: output.durationMs,
           })
         } else {
           send(ws, {

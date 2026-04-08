@@ -51,13 +51,27 @@ export const useKernelStore = create<KernelState>((set, get) => ({
       if (msg.type === 'output') {
         const block = notebookStore.notebook?.blocks.find((b) => b.id === msg.blockId)
         if (block) {
-          const outputs: Output[] = [...(block.outputs ?? []), msg.output]
-          notebookStore.updateBlock(msg.blockId, { outputs })
+          const prev = [...(block.outputs ?? [])]
+          const last = prev[prev.length - 1]
+          // Merge consecutive same-type outputs into one entry
+          if (
+            last &&
+            last.type === msg.output.type &&
+            (last.type === 'stdout' || last.type === 'stderr')
+          ) {
+            prev[prev.length - 1] = { ...last, text: last.text + '\n' + msg.output.text }
+          } else {
+            prev.push(msg.output)
+          }
+          notebookStore.updateBlock(msg.blockId, { outputs: prev })
         }
       }
 
       if (msg.type === 'done') {
-        notebookStore.updateBlock(msg.blockId, { executionCount: msg.executionCount })
+        notebookStore.updateBlock(msg.blockId, {
+          executionCount: msg.executionCount,
+          durationMs: msg.durationMs,
+        })
         set((state) => ({ runningBlock: null, status: { ...state.status, [notebookId]: 'ready' } }))
       }
 

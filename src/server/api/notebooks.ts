@@ -15,6 +15,7 @@ const BlockSchema: z.ZodType<Block> = z.object({
   content: z.string(),
   outputs: z.array(OutputSchema).optional(),
   executionCount: z.number().optional(),
+  durationMs: z.number().optional(),
 })
 
 const NotebookSchema: z.ZodType<Notebook> = z.object({
