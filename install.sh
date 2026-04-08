@@ -2,7 +2,7 @@
 set -e
 
 TYPEWRITER_DIR="$HOME/.typewriter/app"
-BIN_DIR="/usr/local/bin"
+BIN_DIR="$HOME/.local/bin"
 
 echo "Installing Typewriter..."
 
@@ -40,20 +40,30 @@ rm /tmp/typewriter.tar.gz
 echo "Installing dependencies..."
 cd "$TYPEWRITER_DIR" && bun install --production
 
-# Symlink CLI
-echo "Linking CLI..."
-if [ -w "$BIN_DIR" ]; then
-  ln -sf "$TYPEWRITER_DIR/bin/typewriter" "$BIN_DIR/typewriter"
-else
-  sudo ln -sf "$TYPEWRITER_DIR/bin/typewriter" "$BIN_DIR/typewriter"
+# Ensure bin directory exists and symlink CLI
+mkdir -p "$BIN_DIR"
+ln -sf "$TYPEWRITER_DIR/bin/typewriter" "$BIN_DIR/typewriter"
+
+# Check if BIN_DIR is in PATH
+if ! echo "$PATH" | tr ':' '\n' | grep -qx "$BIN_DIR"; then
+  SHELL_NAME=$(basename "$SHELL")
+  case "$SHELL_NAME" in
+    zsh)  RC_FILE="$HOME/.zshrc" ;;
+    bash) RC_FILE="$HOME/.bashrc" ;;
+    *)    RC_FILE="$HOME/.profile" ;;
+  esac
+
+  echo "export PATH=\"$BIN_DIR:\$PATH\"" >> "$RC_FILE"
+  export PATH="$BIN_DIR:$PATH"
+  echo "Added $BIN_DIR to PATH in $RC_FILE"
 fi
 
-VERSION_NUM=$(cat "$TYPEWRITER_DIR/package.json" | grep '"version"' | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
+VERSION_NUM=$(grep '"version"' "$TYPEWRITER_DIR/package.json" | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
 
 echo ""
 echo "Typewriter v${VERSION_NUM} installed successfully!"
 echo ""
 echo "  Run:      typewriter"
-echo "  Update:   typewriter --update"
+echo "  Update:   typewriter update"
 echo "  Version:  typewriter --version"
 echo ""

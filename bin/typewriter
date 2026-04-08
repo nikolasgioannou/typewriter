@@ -2,7 +2,7 @@
 set -e
 
 TYPEWRITER_DIR="$HOME/.typewriter/app"
-BIN_LINK="/usr/local/bin/typewriter"
+BIN_LINK="$HOME/.local/bin/typewriter"
 
 case "${1:-}" in
   --version)
@@ -49,11 +49,7 @@ case "${1:-}" in
   uninstall)
     echo "Uninstalling Typewriter..."
     rm -rf "$HOME/.typewriter"
-    if [ -w "$BIN_LINK" ]; then
-      rm -f "$BIN_LINK"
-    else
-      sudo rm -f "$BIN_LINK"
-    fi
+    rm -f "$BIN_LINK"
     echo "Typewriter uninstalled."
     exit 0
     ;;
