@@ -7,10 +7,11 @@ import { cn } from '@lib/cn'
 interface BlockWrapperProps {
   id: string
   children: ReactNode
+  isSelected: boolean
   registerRef: (el: HTMLElement | null) => void
 }
 
-export function BlockWrapper({ id, children, registerRef }: BlockWrapperProps) {
+export function BlockWrapper({ id, children, isSelected, registerRef }: BlockWrapperProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
   })
@@ -27,7 +28,11 @@ export function BlockWrapper({ id, children, registerRef }: BlockWrapperProps) {
         registerRef(el)
       }}
       style={style}
-      className={cn('group relative py-1', isDragging && 'z-10 opacity-50')}
+      className={cn(
+        'group relative py-1',
+        isDragging && 'z-10 opacity-50',
+        isSelected && 'bg-accent/10 rounded-md'
+      )}
     >
       <div className="absolute top-2 -left-6 opacity-0 transition-opacity group-hover:opacity-100">
         <button

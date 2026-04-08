@@ -12,6 +12,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import type { BlockType } from '@shared/notebook'
 import { useAutosave } from '@hooks/useAutosave'
 import { useBlockFocus } from '@hooks/useBlockFocus'
+import { useBlockSelection } from '@hooks/useBlockSelection'
 import { useKernel } from '@hooks/useKernel'
 import { trpc } from '@lib/trpc'
 import { useKernelStore } from '@store/kernel.store'
@@ -36,7 +37,9 @@ export function Editor() {
     reorderBlocks,
   } = useNotebookStore()
   const { runningBlock, runBlock } = useKernelStore()
-  const { registerBlock, focusBlock } = useBlockFocus()
+  const { registerBlock, focusBlock, blockRefsMap } = useBlockFocus()
+  const { selectedIds, clearSelection, handleMouseDown, selectionOverlayStyle } =
+    useBlockSelection(blockRefsMap)
   const titleRef = useRef<HTMLInputElement>(null)
 
   const { data: notebookData } = trpc.notebooks.byId.useQuery(
@@ -55,12 +58,44 @@ export function Editor() {
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
 
+  // Delete selected blocks on Backspace/Delete, clear on Escape
+  useEffect(() => {
+    if (selectedIds.size === 0) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Backspace' || e.key === 'Delete') {
+        e.preventDefault()
+        for (const id of selectedIds) {
+          removeBlock(id)
+        }
+        clearSelection()
+      }
+      if (e.key === 'Escape') {
+        clearSelection()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedIds, removeBlock, clearSelection])
+
+  // Clear selection when clicking into a block's editable area
+  useEffect(() => {
+    if (selectedIds.size === 0) return
+
+    const handleFocusIn = () => {
+      clearSelection()
+    }
+
+    window.addEventListener('focusin', handleFocusIn)
+    return () => window.removeEventListener('focusin', handleFocusIn)
+  }, [selectedIds, clearSelection])
+
   const handleClickBelow = useCallback(() => {
     if (!notebook) return
 
     const lastBlock = notebook.blocks[notebook.blocks.length - 1]
 
-    // If last block is an empty text block, focus it
     if (
       lastBlock &&
       lastBlock.type === 'text' &&
@@ -70,7 +105,6 @@ export function Editor() {
       return
     }
 
-    // Otherwise append a new text block
     const newId = appendBlock('text')
     setTimeout(() => focusBlock(newId), 100)
   }, [notebook, appendBlock, focusBlock])
@@ -105,19 +139,21 @@ export function Editor() {
     removeBlock(blockId)
     const prevId = blockIds[idx - 1]
     if (prevId) {
-      setTimeout(() => focusBlock(prevId), 50)
+      setTimeout(() => focusBlock(prevId), 100)
     } else {
-      // First block — focus the title and place cursor at the end
       setTimeout(() => {
         titleRef.current?.focus()
         const len = titleRef.current?.value.length ?? 0
         titleRef.current?.setSelectionRange(len, len)
-      }, 50)
+      }, 100)
     }
   }
 
   return (
-    <div className="mx-auto flex min-h-full max-w-3xl flex-col px-4 py-8 pl-14">
+    <div
+      className="mx-auto flex min-h-full max-w-3xl flex-col px-4 py-8 pl-14"
+      onMouseDown={handleMouseDown}
+    >
       <input
         ref={titleRef}
         type="text"
@@ -132,7 +168,6 @@ export function Editor() {
             const after = notebook.title.slice(pos)
             updateTitle(before)
             const newId = appendBlock('text')
-            // Move the new block to the top
             const blocks = useNotebookStore.getState().notebook?.blocks
             if (blocks) {
               reorderBlocks(blocks.length - 1, 0)
@@ -153,6 +188,7 @@ export function Editor() {
             <BlockWrapper
               key={block.id}
               id={block.id}
+              isSelected={selectedIds.has(block.id)}
               registerRef={(el) => registerBlock(block.id, el)}
             >
               {block.type === 'code' && (
@@ -192,6 +228,8 @@ export function Editor() {
       </DndContext>
 
       <div className="min-h-32 flex-1 cursor-text" onClick={handleClickBelow} />
+
+      {selectionOverlayStyle && <div style={selectionOverlayStyle} />}
     </div>
   )
 }
