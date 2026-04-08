@@ -20,7 +20,7 @@ export function Sidebar() {
   }
 
   return (
-    <div className="bg-bg-secondary flex h-full w-[220px] flex-col border-r border-border">
+    <div className="bg-bg-secondary border-border flex h-full w-[220px] flex-col border-r">
       <ScrollArea className="flex-1">
         <div className="space-y-0.5 p-2">
           <button
