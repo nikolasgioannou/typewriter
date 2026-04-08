@@ -7,8 +7,6 @@ import { trpc } from '@lib/trpc'
 import { Shell } from '@client/components/layout/Shell'
 import { Editor } from '@client/components/editor/Editor'
 
-import './styles/global.css'
-
 function App() {
   const [queryClient] = useState(() => new QueryClient())
   const [trpcClient] = useState(() =>

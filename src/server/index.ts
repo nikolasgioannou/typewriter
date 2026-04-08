@@ -1,5 +1,6 @@
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch'
 
+import homepage from '@client/index.html'
 import { appRouter } from '@server/api/router'
 import { shutdown } from '@server/kernel/manager'
 import { wsHandler } from '@server/ws/handler'
@@ -8,6 +9,9 @@ const port = Number(process.env['PORT'] ?? 3000)
 
 const server = Bun.serve({
   port,
+  routes: {
+    '/': homepage,
+  },
   async fetch(req, server) {
     const url = new URL(req.url)
 
@@ -26,13 +30,13 @@ const server = Bun.serve({
       })
     }
 
-    const filePath = url.pathname === '/' ? '/index.html' : url.pathname
-    const file = Bun.file(`public${filePath}`)
-    if (await file.exists()) return new Response(file)
-
-    return new Response(Bun.file('public/index.html'))
+    return new Response('Not found', { status: 404 })
   },
   websocket: wsHandler,
+  development: {
+    hmr: true,
+    console: true,
+  },
 })
 
 console.log(`
