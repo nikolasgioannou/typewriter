@@ -10,8 +10,11 @@ export function usePageTitle() {
     if (timerRef.current) clearTimeout(timerRef.current)
 
     timerRef.current = setTimeout(() => {
-      const title = notebook?.title
-      document.title = title ? `${title} | Typewriter` : 'Typewriter'
+      if (!notebook) {
+        document.title = 'Typewriter'
+      } else {
+        document.title = `${notebook.title || 'New notebook'} | Typewriter`
+      }
     }, 300)
 
     return () => {
