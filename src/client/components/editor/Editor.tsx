@@ -24,8 +24,15 @@ import { HeadingBlock } from './blocks/HeadingBlock'
 import { TextBlock } from './blocks/TextBlock'
 
 export function Editor() {
-  const { activeNotebookId, notebook, setNotebook, updateBlock, addBlock, removeBlock, reorderBlocks } =
-    useNotebookStore()
+  const {
+    activeNotebookId,
+    notebook,
+    setNotebook,
+    updateBlock,
+    addBlock,
+    removeBlock,
+    reorderBlocks,
+  } = useNotebookStore()
   const { runningBlock, runBlock } = useKernelStore()
   const { registerBlock, focusBlock, focusBlockByIndex } = useBlockFocus()
 
@@ -47,7 +54,7 @@ export function Editor() {
 
   if (!notebook || !activeNotebookId) {
     return (
-      <div className="flex h-full items-center justify-center text-fg-tertiary">
+      <div className="text-fg-tertiary flex h-full items-center justify-center">
         Select or create a notebook to get started
       </div>
     )

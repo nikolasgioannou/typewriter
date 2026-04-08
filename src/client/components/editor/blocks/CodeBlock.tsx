@@ -105,14 +105,14 @@ export function CodeBlock({
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-lg border border-border bg-bg-secondary',
-        isRunning && 'border-l-2 border-l-accent'
+        'border-border bg-bg-secondary overflow-hidden rounded-lg border',
+        isRunning && 'border-l-accent border-l-2'
       )}
     >
-      <div className="flex items-center justify-between border-b border-border px-3 py-1.5">
+      <div className="border-border flex items-center justify-between border-b px-3 py-1.5">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-xs text-fg-tertiary">typescript</span>
-          <span className="font-mono text-xs text-fg-tertiary">{countLabel}</span>
+          <span className="text-fg-tertiary font-mono text-xs">typescript</span>
+          <span className="text-fg-tertiary font-mono text-xs">{countLabel}</span>
           {isStale && <Badge variant="warning">stale</Badge>}
         </div>
         <div className="flex items-center gap-2">
@@ -131,7 +131,7 @@ export function CodeBlock({
       <div ref={editorRef} />
 
       {outputs.length > 0 && (
-        <div className={cn('border-t border-border px-3 py-2', isStale && 'opacity-50')}>
+        <div className={cn('border-border border-t px-3 py-2', isStale && 'opacity-50')}>
           {outputs.map((output, i) => (
             <div key={i} className="flex gap-2 font-mono text-xs">
               <span
@@ -146,7 +146,7 @@ export function CodeBlock({
               </span>
               <pre
                 className={cn(
-                  'flex-1 whitespace-pre-wrap break-all',
+                  'flex-1 break-all whitespace-pre-wrap',
                   output.type === 'error' ? 'text-kernel-error' : 'text-fg-primary'
                 )}
               >

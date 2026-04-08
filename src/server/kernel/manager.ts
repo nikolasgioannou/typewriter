@@ -1,3 +1,4 @@
+import type { FileSink } from 'bun'
 import { resolve } from 'path'
 
 export interface KernelOutput {
@@ -8,6 +9,8 @@ export interface KernelOutput {
 
 interface KernelProcess {
   process: ReturnType<typeof Bun.spawn>
+  stdin: FileSink
+  stdout: ReadableStream<Uint8Array>
   executionCounts: Map<string, number>
 }
 
@@ -22,7 +25,12 @@ function spawnKernel(): KernelProcess {
     stderr: 'pipe',
   })
 
-  return { process: proc, executionCounts: new Map() }
+  return {
+    process: proc,
+    stdin: proc.stdin as FileSink,
+    stdout: proc.stdout as ReadableStream<Uint8Array>,
+    executionCounts: new Map(),
+  }
 }
 
 function getOrCreate(notebookId: string): KernelProcess {
@@ -40,44 +48,42 @@ export async function* runCode(
   code: string
 ): AsyncGenerator<KernelOutput> {
   const kernel = getOrCreate(notebookId)
-  const stdin = kernel.process.stdin as unknown as WritableStream<Uint8Array>
-  const stdout = kernel.process.stdout as unknown as ReadableStream<Uint8Array>
 
-  const writer = stdin.getWriter()
   const message = JSON.stringify({ id: blockId, code }) + '\n'
-  await writer.write(new TextEncoder().encode(message))
-  writer.releaseLock()
+  kernel.stdin.write(message)
+  kernel.stdin.flush()
 
-  const reader = stdout.getReader()
+  const reader = kernel.stdout.getReader()
   const decoder = new TextDecoder()
   let buffer = ''
 
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
 
-    buffer += decoder.decode(value, { stream: true })
-    const lines = buffer.split('\n')
-    buffer = lines.pop() ?? ''
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() ?? ''
 
-    for (const line of lines) {
-      if (!line.trim()) continue
-      const parsed = JSON.parse(line) as KernelOutput
-      if (parsed.id !== blockId) continue
+      for (const line of lines) {
+        if (!line.trim()) continue
+        const parsed = JSON.parse(line) as KernelOutput
+        if (parsed.id !== blockId) continue
 
-      if (parsed.type === 'done') {
-        const count = (kernel.executionCounts.get(blockId) ?? 0) + 1
-        kernel.executionCounts.set(blockId, count)
-        reader.releaseLock()
-        yield { ...parsed, id: blockId }
-        return
+        if (parsed.type === 'done') {
+          const count = (kernel.executionCounts.get(blockId) ?? 0) + 1
+          kernel.executionCounts.set(blockId, count)
+          yield { ...parsed, id: blockId }
+          return
+        }
+
+        yield parsed
       }
-
-      yield parsed
     }
+  } finally {
+    reader.releaseLock()
   }
-
-  reader.releaseLock()
 }
 
 export function getExecutionCount(notebookId: string, blockId: string): number {

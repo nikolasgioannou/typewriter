@@ -1,10 +1,5 @@
 import type { BlockType } from '@shared/notebook'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@ui/index'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@ui/index'
 
 interface SlashMenuProps {
   onSelect: (type: BlockType) => void
@@ -29,7 +24,7 @@ export function SlashMenu({ onSelect, children }: SlashMenuProps) {
           <DropdownMenuItem key={item.type} onClick={() => onSelect(item.type)}>
             <div>
               <div className="text-sm font-medium">{item.label}</div>
-              <div className="text-xs text-fg-tertiary">{item.description}</div>
+              <div className="text-fg-tertiary text-xs">{item.description}</div>
             </div>
           </DropdownMenuItem>
         ))}

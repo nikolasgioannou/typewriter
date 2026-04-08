@@ -51,16 +51,16 @@ export function BlockWrapper({
       style={style}
       className={cn('group relative py-1', isDragging && 'z-10 opacity-50')}
     >
-      <div className="absolute -left-10 top-2 flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+      <div className="absolute top-2 -left-10 flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
         <SlashMenu onSelect={onAddBlock}>
-          <button className="flex h-6 w-6 items-center justify-center rounded text-fg-tertiary hover:bg-bg-tertiary hover:text-fg-secondary">
+          <button className="text-fg-tertiary hover:bg-bg-tertiary hover:text-fg-secondary flex h-6 w-6 items-center justify-center rounded">
             +
           </button>
         </SlashMenu>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
-              className="flex h-6 w-6 cursor-grab items-center justify-center rounded text-fg-tertiary hover:bg-bg-tertiary hover:text-fg-secondary"
+              className="text-fg-tertiary hover:bg-bg-tertiary hover:text-fg-secondary flex h-6 w-6 cursor-grab items-center justify-center rounded"
               {...attributes}
               {...listeners}
             >
@@ -75,7 +75,9 @@ export function BlockWrapper({
               <DropdownMenuItem onClick={() => onChangeType('text')}>Text</DropdownMenuItem>
             )}
             {blockType !== 'heading1' && (
-              <DropdownMenuItem onClick={() => onChangeType('heading1')}>Heading 1</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onChangeType('heading1')}>
+                Heading 1
+              </DropdownMenuItem>
             )}
             {blockType !== 'divider' && (
               <DropdownMenuItem onClick={() => onChangeType('divider')}>Divider</DropdownMenuItem>

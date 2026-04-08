@@ -22,9 +22,9 @@ export function Sidebar() {
   }
 
   return (
-    <div className="flex h-full w-[220px] flex-col border-r border-border bg-bg-secondary">
+    <div className="border-border bg-bg-secondary flex h-full w-[220px] flex-col border-r">
       <div className="flex items-center justify-between p-3">
-        <span className="text-sm font-semibold text-fg-primary">Notebooks</span>
+        <span className="text-fg-primary text-sm font-semibold">Notebooks</span>
       </div>
       <ScrollArea className="flex-1">
         <div className="space-y-0.5 px-2">
