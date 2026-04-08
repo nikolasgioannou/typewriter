@@ -1,12 +1,13 @@
 import { javascript } from '@codemirror/lang-javascript'
-import { syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language'
+import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { EditorState } from '@codemirror/state'
+import { oneDarkHighlightStyle } from '@codemirror/theme-one-dark'
 import { EditorView, keymap } from '@codemirror/view'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { Output } from '@shared/notebook'
 import { cn } from '@lib/cn'
-import { Badge, Button, Kbd } from '@ui/index'
+import { Badge, Button } from '@ui/index'
 
 interface CodeBlockProps {
   content: string
@@ -25,6 +26,21 @@ const outputTypeLabel: Record<string, string> = {
   error: 'error',
 }
 
+function useIsDark() {
+  const [isDark, setIsDark] = useState(
+    () => window.matchMedia('(prefers-color-scheme: dark)').matches
+  )
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const handler = (e: MediaQueryListEvent) => setIsDark(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+
+  return isDark
+}
+
 export function CodeBlock({
   content,
   outputs,
@@ -36,6 +52,7 @@ export function CodeBlock({
 }: CodeBlockProps) {
   const editorRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
+  const isDark = useIsDark()
 
   const handleRun = useCallback(() => {
     onRun()
@@ -45,11 +62,15 @@ export function CodeBlock({
   useEffect(() => {
     if (!editorRef.current) return
 
+    const highlightExt = isDark
+      ? syntaxHighlighting(oneDarkHighlightStyle, { fallback: true })
+      : syntaxHighlighting(defaultHighlightStyle, { fallback: true })
+
     const state = EditorState.create({
       doc: content,
       extensions: [
         javascript({ typescript: true }),
-        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+        highlightExt,
         EditorView.lineWrapping,
         keymap.of([{ key: 'Mod-Enter', run: () => handleRun() }]),
         EditorView.updateListener.of((update) => {
@@ -97,7 +118,7 @@ export function CodeBlock({
       view.destroy()
       viewRef.current = null
     }
-  }, [])
+  }, [isDark])
 
   const countLabel = executionCount != null ? `[${executionCount}]` : '[ ]'
 
@@ -115,7 +136,6 @@ export function CodeBlock({
           {isStale && <Badge variant="warning">stale</Badge>}
         </div>
         <div className="flex items-center gap-2">
-          <Kbd>{navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+Enter</Kbd>
           <Button
             size="sm"
             variant={isRunning ? 'ghost' : 'default'}
