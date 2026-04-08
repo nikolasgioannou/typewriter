@@ -2,25 +2,27 @@
 set -e
 
 TYPEWRITER_DIR="$HOME/.typewriter/app"
+BIN_LINK="/usr/local/bin/typewriter"
 
-# Handle flags
 case "${1:-}" in
-  --version|-v)
+  version|--version|-v)
     grep '"version"' "$TYPEWRITER_DIR/package.json" | head -1 | sed 's/.*"version": "\(.*\)".*/\1/'
     exit 0
     ;;
-  --help|-h)
-    echo "Usage: typewriter [options]"
+
+  help|--help|-h)
+    echo "Usage: typewriter [command]"
     echo ""
-    echo "Options:"
-    echo "  -v, --version    Print version"
-    echo "  -h, --help       Print help"
-    echo "  --update         Update to latest version"
-    echo ""
-    echo "Starts the Typewriter notebook server and opens it in your browser."
+    echo "Commands:"
+    echo "  (none)       Start the notebook server"
+    echo "  version      Print version"
+    echo "  update       Update to latest version"
+    echo "  uninstall    Uninstall Typewriter"
+    echo "  help         Print this help"
     exit 0
     ;;
-  --update)
+
+  update|--update)
     echo "Updating Typewriter..."
     LATEST=$(curl -fsSL https://api.github.com/repos/nikolasgioannou/typewriter/releases/latest | grep '"tag_name"' | sed 's/.*"v\(.*\)".*/\1/')
     if [ -z "$LATEST" ]; then
@@ -40,6 +42,18 @@ case "${1:-}" in
     rm /tmp/typewriter-update.tar.gz
     cd "$TYPEWRITER_DIR" && bun install --production
     echo "Updated to $LATEST."
+    exit 0
+    ;;
+
+  uninstall|--uninstall)
+    echo "Uninstalling Typewriter..."
+    rm -rf "$HOME/.typewriter"
+    if [ -w "$BIN_LINK" ]; then
+      rm -f "$BIN_LINK"
+    else
+      sudo rm -f "$BIN_LINK"
+    fi
+    echo "Typewriter uninstalled."
     exit 0
     ;;
 esac
