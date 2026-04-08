@@ -1,0 +1,29 @@
+@import 'tailwindcss';
+@import './tokens.css';
+
+@theme {
+  --color-bg-primary: hsl(var(--bg-primary));
+  --color-bg-secondary: hsl(var(--bg-secondary));
+  --color-bg-tertiary: hsl(var(--bg-tertiary));
+
+  --color-fg-primary: hsl(var(--fg-primary));
+  --color-fg-secondary: hsl(var(--fg-secondary));
+  --color-fg-tertiary: hsl(var(--fg-tertiary));
+
+  --color-border: hsl(var(--border));
+  --color-border-strong: hsl(var(--border-strong));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-fg: hsl(var(--accent-fg));
+
+  --color-kernel-ready: hsl(var(--kernel-ready));
+  --color-kernel-running: hsl(var(--kernel-running));
+  --color-kernel-error: hsl(var(--kernel-error));
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--color-bg-primary);
+  color: var(--color-fg-primary);
+  margin: 0;
+}
