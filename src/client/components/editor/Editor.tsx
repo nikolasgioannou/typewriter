@@ -189,7 +189,7 @@ export function Editor() {
               setTimeout(() => focusBlock(newId), 100)
             }
           }}
-          className="text-fg-primary placeholder:text-fg-tertiary mb-4 w-full bg-transparent text-4xl font-bold"
+          className="text-fg-primary placeholder:text-fg-tertiary mb-4 w-full bg-transparent pl-9 text-4xl font-bold"
           placeholder="Untitled"
         />
 
@@ -219,7 +219,10 @@ export function Editor() {
                       onChange={(content) => updateBlock(block.id, { content })}
                       onEnter={() => handleAddBlock(block.id, 'text')}
                       onBackspace={() => handleRemoveBlock(block.id)}
-                      onSlashSelect={(type) => updateBlock(block.id, { type, content: '' })}
+                      onSlashSelect={(type) => {
+                        updateBlock(block.id, { type, content: '' })
+                        setTimeout(() => focusBlock(block.id), 100)
+                      }}
                     />
                   )}
                   {(block.type === 'heading1' ||
@@ -239,9 +242,22 @@ export function Editor() {
             </div>
           </SortableContext>
         </DndContext>
+        <div
+          className="min-h-32 flex-1 cursor-text"
+          onMouseDown={(e) => {
+            ;(e.currentTarget as HTMLElement).dataset.mouseDownX = String(e.clientX)
+            ;(e.currentTarget as HTMLElement).dataset.mouseDownY = String(e.clientY)
+          }}
+          onMouseUp={(e) => {
+            const startX = Number(e.currentTarget.dataset.mouseDownX ?? 0)
+            const startY = Number(e.currentTarget.dataset.mouseDownY ?? 0)
+            const distance = Math.abs(e.clientX - startX) + Math.abs(e.clientY - startY)
+            if (distance < 5) {
+              handleClickBelow()
+            }
+          }}
+        />
       </div>
-
-      <div className="min-h-32 flex-1 cursor-text" onClick={handleClickBelow} />
 
       {lassoBox && (
         <div

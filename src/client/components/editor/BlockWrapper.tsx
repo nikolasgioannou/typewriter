@@ -19,7 +19,7 @@ export function BlockWrapper({ id, children, isSelected, registerRef }: BlockWra
   })
 
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: CSS.Translate.toString(transform),
     transition,
   }
 
