@@ -1,5 +1,4 @@
 import { useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 import type { ReactNode } from 'react'
 
 import { GripVertical } from 'lucide-react'
@@ -19,7 +18,7 @@ export function BlockWrapper({ id, children, isSelected, registerRef }: BlockWra
   })
 
   const style = {
-    transform: CSS.Translate.toString(transform),
+    transform: transform ? `translate3d(0, ${transform.y}px, 0)` : undefined,
     transition,
   }
 
@@ -31,7 +30,7 @@ export function BlockWrapper({ id, children, isSelected, registerRef }: BlockWra
       }}
       data-block-id={id}
       style={style}
-      className={cn('group flex items-center gap-2', isDragging && 'z-10 opacity-50')}
+      className={cn('group flex items-center gap-2', isDragging && 'z-10')}
     >
       <div className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
         <button

@@ -1,5 +1,5 @@
 import * as Popover from '@radix-ui/react-popover'
-import { Code2, Heading1, Heading2, Heading3, Minus, Type } from 'lucide-react'
+import { Code2, Heading1, Heading2, Heading3, Minus } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { BlockType } from '@shared/notebook'
@@ -14,13 +14,6 @@ interface SlashMenuItem {
 }
 
 const menuItems: SlashMenuItem[] = [
-  {
-    type: 'text',
-    label: 'Text',
-    aliases: ['text', 'paragraph', 'p'],
-    icon: <Type size={16} />,
-    shortcut: '',
-  },
   {
     type: 'heading1',
     label: 'Heading 1',
