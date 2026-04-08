@@ -13,6 +13,7 @@ import type { BlockType } from '@shared/notebook'
 import { useAutosave } from '@hooks/useAutosave'
 import { useBlockFocus } from '@hooks/useBlockFocus'
 import { useBlockSelection } from '@hooks/useBlockSelection'
+import { useInputMode } from '@hooks/useInputMode'
 import { useKernel } from '@hooks/useKernel'
 import { cn } from '@lib/cn'
 import { trpc } from '@lib/trpc'
@@ -44,6 +45,7 @@ export function Editor() {
   const editorRef = useRef<HTMLDivElement>(null)
   const { selectedBlockIds, clearSelection, handleEditorMouseDown, lassoBox, hasSelection } =
     useBlockSelection(editorRef)
+  const isTyping = useInputMode()
   const titleRef = useRef<HTMLInputElement>(null)
 
   const { data: notebookData } = trpc.notebooks.byId.useQuery(
@@ -203,6 +205,7 @@ export function Editor() {
                   key={block.id}
                   id={block.id}
                   isSelected={selectedBlockIds.includes(block.id)}
+                  hideHandle={isTyping}
                   registerRef={(el) => registerBlock(block.id, el)}
                 >
                   {block.type === 'code' && (

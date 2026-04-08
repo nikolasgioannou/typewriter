@@ -9,10 +9,17 @@ interface BlockWrapperProps {
   id: string
   children: ReactNode
   isSelected: boolean
+  hideHandle: boolean
   registerRef: (el: HTMLElement | null) => void
 }
 
-export function BlockWrapper({ id, children, isSelected, registerRef }: BlockWrapperProps) {
+export function BlockWrapper({
+  id,
+  children,
+  isSelected,
+  hideHandle,
+  registerRef,
+}: BlockWrapperProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
   })
@@ -32,7 +39,12 @@ export function BlockWrapper({ id, children, isSelected, registerRef }: BlockWra
       style={style}
       className={cn('group flex items-center gap-2', isDragging && 'z-10')}
     >
-      <div className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
+      <div
+        className={cn(
+          'shrink-0 transition-opacity',
+          hideHandle ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'
+        )}
+      >
         <button
           className="text-fg-tertiary hover:bg-bg-tertiary hover:text-fg-secondary flex h-6 w-6 cursor-grab items-center justify-center rounded"
           {...attributes}
