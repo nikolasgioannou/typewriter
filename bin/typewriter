@@ -57,4 +57,4 @@ esac
 
 NOTEBOOKS_DIR="$(pwd)"
 cd "$TYPEWRITER_DIR"
-exec env NOTEBOOKS_DIR="$NOTEBOOKS_DIR" bun run src/server/index.ts
+exec env NOTEBOOKS_DIR="$NOTEBOOKS_DIR" NODE_ENV=production bun run src/server/index.ts

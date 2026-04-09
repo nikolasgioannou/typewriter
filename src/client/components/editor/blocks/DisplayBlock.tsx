@@ -233,7 +233,7 @@ export function DisplayBlock({ blockId, notebookId, config, onConfigChange }: Di
             }}
           >
             <SelectTrigger className="min-w-[120px] font-mono text-xs">
-              <SelectValue placeholder="Select variable" />
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {fetchedVars.length > 0 ? (
