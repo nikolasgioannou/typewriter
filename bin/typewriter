@@ -16,6 +16,7 @@ case "${1:-}" in
     echo "Commands:"
     echo "  update       Update to latest version"
     echo "  uninstall    Uninstall Typewriter"
+    echo "  skill        Install agent skill (claude, cursor, or all)"
     echo ""
     echo "Flags:"
     echo "  --version    Print version"
@@ -51,6 +52,11 @@ case "${1:-}" in
     rm -rf "$HOME/.typewriter"
     rm -f "$BIN_LINK"
     echo "Typewriter uninstalled."
+    exit 0
+    ;;
+
+  skill)
+    TYPEWRITER_DIR="$TYPEWRITER_DIR" bash "$TYPEWRITER_DIR/scripts/skill.sh" "${2:-all}"
     exit 0
     ;;
 esac

@@ -41,6 +41,21 @@ typewriter uninstall
 
 Typewriter starts a local server on port 8888 (auto-increments if taken).
 
+## Agent Skills
+
+Let AI coding assistants create `.tw.json` notebooks for you. Supports [Claude Code](https://claude.ai/code) and [Cursor](https://cursor.com).
+
+```bash
+# Install skill for all supported platforms
+typewriter skill
+
+# Install for a specific platform
+typewriter skill claude
+typewriter skill cursor
+```
+
+Once installed, ask your AI assistant to "create a TypeScript notebook that analyzes this data" and it will generate a `.tw.json` file you can open with Typewriter.
+
 Notebooks are saved as `.tw.json` files in the directory where you run `typewriter`.
 
 ## Development
