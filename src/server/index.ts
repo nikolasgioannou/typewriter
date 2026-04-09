@@ -33,7 +33,10 @@ const serverOptions = {
     return new Response('Not found', { status: 404 })
   },
   websocket: wsHandler,
-  development: process.env['NODE_ENV'] !== 'production' ? { hmr: true, console: false } : false,
+  development: {
+    hmr: process.env['NODE_ENV'] !== 'production',
+    console: false,
+  },
 }
 
 function startServer(port: number, maxAttempts = 10): ReturnType<typeof Bun.serve> {

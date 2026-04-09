@@ -49,7 +49,7 @@ export const notebooksRouter = router({
     const notebooks: Array<{ id: string; title: string; updated: number }> = []
 
     for await (const path of glob.scan(getNotebooksDir())) {
-      const file = Bun.file(path)
+      const file = Bun.file(`${getNotebooksDir()}/${path}`)
       const data = (await file.json()) as Notebook
       notebooks.push({ id: data.id, title: data.title, updated: data.updated })
     }
