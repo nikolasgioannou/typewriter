@@ -41,7 +41,7 @@ case "${1:-}" in
     mkdir -p "$TYPEWRITER_DIR"
     tar -xzf /tmp/typewriter-update.tar.gz -C "$TYPEWRITER_DIR" --strip-components=1
     rm /tmp/typewriter-update.tar.gz
-    cd "$TYPEWRITER_DIR" && bun install --production
+    cd "$TYPEWRITER_DIR" && bun install && bun scripts/build.ts
     echo "Updated to $LATEST."
     exit 0
     ;;
@@ -56,6 +56,5 @@ case "${1:-}" in
 esac
 
 export NOTEBOOKS_DIR="$(pwd)"
-export NODE_ENV=production
 cd "$TYPEWRITER_DIR"
 exec bun src/server/index.ts

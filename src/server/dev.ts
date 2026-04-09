@@ -1,16 +1,21 @@
-import { fetchRequestHandler } from '@trpc/server/adapters/fetch'
-import { resolve } from 'path'
+// Dev entry point — uses Bun's HTML imports with HMR
+// Run with: bun --hot src/server/dev.ts
 
+import { fetchRequestHandler } from '@trpc/server/adapters/fetch'
+
+import homepage from '@client/index.html'
 import { appRouter } from '@server/api/router'
 import { shutdown } from '@server/kernel/manager'
 import { wsHandler } from '@server/ws/handler'
 
 const basePort = Number(process.env['PORT'] ?? 8888)
-const distDir = resolve(import.meta.dir, '../../dist')
 
 const serverOptions = {
-  websocket: wsHandler,
-  async fetch(req: Request, server: { upgrade: (req: Request, options?: unknown) => boolean }) {
+  routes: {
+    '/': homepage,
+    '/:notebookId': homepage,
+  },
+  async fetch(req: Request, server: { upgrade: (req: Request) => boolean }) {
     const url = new URL(req.url)
 
     if (url.pathname === '/ws') {
@@ -28,22 +33,19 @@ const serverOptions = {
       })
     }
 
-    // Serve static files from dist/
-    const filePath =
-      url.pathname === '/' || /^\/[a-z0-9-]+$/.test(url.pathname) ? '/index.html' : url.pathname
-    const file = Bun.file(`${distDir}${filePath}`)
-    if (await file.exists()) return new Response(file)
-    return new Response(Bun.file(`${distDir}/index.html`))
+    return new Response('Not found', { status: 404 })
+  },
+  websocket: wsHandler,
+  development: {
+    hmr: true,
+    console: false,
   },
 }
 
 function startServer(port: number, maxAttempts = 10): ReturnType<typeof Bun.serve> {
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
-      return Bun.serve({
-        ...serverOptions,
-        port: port + attempt,
-      } as Parameters<typeof Bun.serve>[0])
+      return Bun.serve({ ...serverOptions, port: port + attempt })
     } catch (err) {
       const isPortTaken =
         (err instanceof Error && (err as NodeJS.ErrnoException).code === 'EADDRINUSE') ||
@@ -59,11 +61,13 @@ function startServer(port: number, maxAttempts = 10): ReturnType<typeof Bun.serv
 
 const server = startServer(basePort)
 
+const url = `http://localhost:${server.port}`
+
 console.log(
   [
     '',
-    'typewriter',
-    `local       http://localhost:${server.port}`,
+    'typewriter (dev)',
+    `local       ${url}`,
     'kernel      ready',
     '',
     'Ctrl+C to stop',

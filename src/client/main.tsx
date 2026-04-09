@@ -3,6 +3,7 @@ import { httpBatchLink } from '@trpc/client'
 import { StrictMode, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 
+import '@client/styles/global.css'
 import { trpc } from '@lib/trpc'
 import { Editor } from '@client/components/editor/Editor'
 import { Shell } from '@client/components/layout/Shell'

@@ -38,7 +38,10 @@ rm /tmp/typewriter.tar.gz
 
 # Install dependencies
 echo "Installing dependencies..."
-cd "$TYPEWRITER_DIR" && bun install --production
+cd "$TYPEWRITER_DIR" && bun install
+
+echo "Building client..."
+bun scripts/build.ts
 
 # Ensure bin directory exists and symlink CLI
 mkdir -p "$BIN_DIR"
