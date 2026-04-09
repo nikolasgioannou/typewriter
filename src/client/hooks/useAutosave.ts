@@ -8,6 +8,7 @@ export function useAutosave() {
   const notebookId = useNotebookStore((s) => s.notebook?.id)
   const saveMutation = trpc.notebooks.save.useMutation()
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const savingRef = useRef(false)
 
   useEffect(() => {
     if (!isDirty || !notebookId) return
@@ -15,22 +16,22 @@ export function useAutosave() {
     if (timerRef.current) clearTimeout(timerRef.current)
 
     timerRef.current = setTimeout(async () => {
-      // Read the latest state at save time, not from the closure
+      if (savingRef.current) return
+
       const { notebook, isDirty: stillDirty } = useNotebookStore.getState()
       if (!notebook || !stillDirty) return
 
-      useNotebookStore.setState({ isSaving: true })
+      savingRef.current = true
       try {
         await saveMutation.mutateAsync({ id: notebook.id, notebook })
-        // Only mark saved if nothing changed during the save
         const { isDirty: changedDuring } = useNotebookStore.getState()
         if (!changedDuring) {
-          useNotebookStore.setState({ isSaving: false, isDirty: false })
-        } else {
-          useNotebookStore.setState({ isSaving: false })
+          useNotebookStore.setState({ isDirty: false })
         }
       } catch {
-        useNotebookStore.setState({ isSaving: false })
+        // Will retry on next dirty change
+      } finally {
+        savingRef.current = false
       }
     }, 1000)
 

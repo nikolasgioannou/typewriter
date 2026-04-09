@@ -7,7 +7,6 @@ interface NotebookState {
   activeNotebookId: string | null
   notebook: Notebook | null
   isDirty: boolean
-  isSaving: boolean
 
   setActiveNotebook: (id: string | null) => void
   setNotebook: (notebook: Notebook | null) => void
@@ -17,15 +16,12 @@ interface NotebookState {
   removeBlock: (blockId: string) => void
   reorderBlocks: (fromIndex: number, toIndex: number) => void
   updateTitle: (title: string) => void
-  markSaving: () => void
-  markSaved: () => void
 }
 
 export const useNotebookStore = create<NotebookState>((set) => ({
   activeNotebookId: null,
   notebook: null,
   isDirty: false,
-  isSaving: false,
 
   setActiveNotebook: (id) => {
     set({ activeNotebookId: id })
@@ -102,7 +98,4 @@ export const useNotebookStore = create<NotebookState>((set) => ({
       if (!state.notebook) return state
       return { notebook: { ...state.notebook, title }, isDirty: true }
     }),
-
-  markSaving: () => set({ isSaving: true }),
-  markSaved: () => set({ isSaving: false, isDirty: false }),
 }))

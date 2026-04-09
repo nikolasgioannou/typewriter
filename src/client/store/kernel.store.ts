@@ -38,7 +38,11 @@ export const useKernelStore = create<KernelState>((set, get) => ({
 
   connect: (notebookId: string) => {
     const existing = get().ws
-    if (existing && existing.readyState === WebSocket.OPEN) return
+    if (
+      existing &&
+      (existing.readyState === WebSocket.OPEN || existing.readyState === WebSocket.CONNECTING)
+    )
+      return
 
     const ws = new WebSocket(getWsUrl())
 

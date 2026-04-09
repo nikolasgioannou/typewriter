@@ -1,10 +1,47 @@
 import type { ServerWebSocket } from 'bun'
 
 import * as kernel from '@server/kernel/manager'
+import type { KernelOutput } from '@server/kernel/manager'
 import type { ClientMessage, ServerMessage } from '@shared/ws'
 
 function send(ws: ServerWebSocket, msg: ServerMessage) {
   ws.send(JSON.stringify(msg))
+}
+
+async function streamOutputs(
+  ws: ServerWebSocket,
+  blockId: string,
+  outputs: AsyncGenerator<KernelOutput>,
+  getExecutionCount?: () => number
+) {
+  try {
+    for await (const output of outputs) {
+      if (output.type === 'done') {
+        send(ws, {
+          type: 'done',
+          blockId,
+          executionCount: getExecutionCount?.() ?? 0,
+          durationMs: output.durationMs,
+        })
+      } else {
+        send(ws, {
+          type: 'output',
+          blockId,
+          output: {
+            type: output.type as 'stdout' | 'stderr' | 'return' | 'error',
+            text: output.text ?? '',
+            timestamp: Date.now(),
+          },
+        })
+      }
+    }
+  } catch (err) {
+    send(ws, {
+      type: 'error',
+      blockId,
+      error: err instanceof Error ? err.message : 'Kernel error',
+    })
+  }
 }
 
 export const wsHandler = {
@@ -17,78 +54,50 @@ export const wsHandler = {
     }
 
     if (msg.type === 'run') {
-      for await (const output of kernel.runCode(msg.notebookId, msg.blockId, msg.code)) {
-        if (output.type === 'done') {
-          send(ws, {
-            type: 'done',
-            blockId: msg.blockId,
-            executionCount: kernel.getExecutionCount(msg.notebookId, msg.blockId),
-            durationMs: output.durationMs,
-          })
-        } else {
-          send(ws, {
-            type: 'output',
-            blockId: msg.blockId,
-            output: {
-              type: output.type as 'stdout' | 'stderr' | 'return' | 'error',
-              text: output.text ?? '',
-              timestamp: Date.now(),
-            },
-          })
-        }
-      }
+      await streamOutputs(
+        ws,
+        msg.blockId,
+        kernel.runCode(msg.notebookId, msg.blockId, msg.code),
+        () => kernel.getExecutionCount(msg.notebookId, msg.blockId)
+      )
     }
 
     if (msg.type === 'shell') {
-      for await (const output of kernel.runShell(msg.notebookId, msg.blockId, msg.command)) {
-        if (output.type === 'done') {
-          send(ws, {
-            type: 'done',
-            blockId: msg.blockId,
-            executionCount: 0,
-            durationMs: output.durationMs,
-          })
-        } else {
-          send(ws, {
-            type: 'output',
-            blockId: msg.blockId,
-            output: {
-              type: output.type as 'stdout' | 'stderr' | 'return' | 'error',
-              text: output.text ?? '',
-              timestamp: Date.now(),
-            },
-          })
-        }
-      }
+      await streamOutputs(
+        ws,
+        msg.blockId,
+        kernel.runShell(msg.notebookId, msg.blockId, msg.command)
+      )
     }
 
     if (msg.type === 'eval') {
       let gotData = false
-      for await (const output of kernel.runCode(
-        msg.notebookId,
-        msg.blockId,
-        `__tw[${JSON.stringify(msg.expression)}]`
-      )) {
-        if (output.type === 'return' && output.text) {
-          gotData = true
-          try {
-            send(ws, {
-              type: 'data',
-              blockId: msg.blockId,
-              data: JSON.parse(output.text),
-            })
-          } catch {
-            send(ws, { type: 'data', blockId: msg.blockId, data: output.text })
+      try {
+        for await (const output of kernel.runCode(
+          msg.notebookId,
+          msg.blockId,
+          `__tw[${JSON.stringify(msg.expression)}]`
+        )) {
+          if (output.type === 'return' && output.text) {
+            gotData = true
+            try {
+              send(ws, { type: 'data', blockId: msg.blockId, data: JSON.parse(output.text) })
+            } catch {
+              send(ws, { type: 'data', blockId: msg.blockId, data: output.text })
+            }
+          }
+          if (output.type === 'error') {
+            gotData = true
+            send(ws, { type: 'error', blockId: msg.blockId, error: output.text ?? 'Unknown error' })
           }
         }
-        if (output.type === 'error') {
-          gotData = true
-          send(ws, {
-            type: 'error',
-            blockId: msg.blockId,
-            error: output.text ?? 'Unknown error',
-          })
-        }
+      } catch (err) {
+        gotData = true
+        send(ws, {
+          type: 'error',
+          blockId: msg.blockId,
+          error: err instanceof Error ? err.message : 'Eval error',
+        })
       }
       if (!gotData) {
         send(ws, { type: 'data', blockId: msg.blockId, data: null })
@@ -97,18 +106,22 @@ export const wsHandler = {
 
     if (msg.type === 'list_vars') {
       const listCode = `Object.keys(globalThis).filter(k => !__builtinKeys.has(k) && !k.startsWith('__') && k !== 'require')`
-      for await (const output of kernel.runCode(msg.notebookId, msg.blockId, listCode)) {
-        if (output.type === 'return' && output.text) {
-          try {
-            send(ws, {
-              type: 'vars',
-              blockId: msg.blockId,
-              vars: JSON.parse(output.text) as string[],
-            })
-          } catch {
-            send(ws, { type: 'vars', blockId: msg.blockId, vars: [] })
+      try {
+        for await (const output of kernel.runCode(msg.notebookId, msg.blockId, listCode)) {
+          if (output.type === 'return' && output.text) {
+            try {
+              send(ws, {
+                type: 'vars',
+                blockId: msg.blockId,
+                vars: JSON.parse(output.text) as string[],
+              })
+            } catch {
+              send(ws, { type: 'vars', blockId: msg.blockId, vars: [] })
+            }
           }
         }
+      } catch {
+        send(ws, { type: 'vars', blockId: msg.blockId, vars: [] })
       }
     }
 
