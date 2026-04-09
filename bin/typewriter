@@ -55,5 +55,6 @@ case "${1:-}" in
     ;;
 esac
 
+NOTEBOOKS_DIR="$(pwd)"
 cd "$TYPEWRITER_DIR"
-exec bun run src/server/index.ts
+exec env NOTEBOOKS_DIR="$NOTEBOOKS_DIR" bun run src/server/index.ts

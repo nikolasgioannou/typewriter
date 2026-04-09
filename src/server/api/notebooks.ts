@@ -1,6 +1,7 @@
 import type { Block, Notebook } from '@shared/notebook'
 import { z } from 'zod'
 
+import { getNotebooksDir } from '@server/lib/paths'
 import { publicProcedure, router } from './trpc'
 
 const OutputSchema = z.object({
@@ -39,7 +40,7 @@ function notebookPath(id: string): string {
   if (!/^[a-z0-9-]+$/.test(id)) {
     throw new Error('Invalid notebook ID')
   }
-  return `${process.cwd()}/${id}.tw.json`
+  return `${getNotebooksDir()}/${id}.tw.json`
 }
 
 export const notebooksRouter = router({
@@ -47,7 +48,7 @@ export const notebooksRouter = router({
     const glob = new Bun.Glob('*.tw.json')
     const notebooks: Array<{ id: string; title: string; updated: number }> = []
 
-    for await (const path of glob.scan(process.cwd())) {
+    for await (const path of glob.scan(getNotebooksDir())) {
       const file = Bun.file(path)
       const data = (await file.json()) as Notebook
       notebooks.push({ id: data.id, title: data.title, updated: data.updated })
