@@ -55,6 +55,7 @@ case "${1:-}" in
     ;;
 esac
 
-NOTEBOOKS_DIR="$(pwd)"
+export NOTEBOOKS_DIR="$(pwd)"
+export NODE_ENV=production
 cd "$TYPEWRITER_DIR"
-exec env NOTEBOOKS_DIR="$NOTEBOOKS_DIR" NODE_ENV=production bun run src/server/index.ts
+exec bun src/server/index.ts
