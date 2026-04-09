@@ -1,111 +1,83 @@
----
-description: Use Bun instead of Node.js, npm, pnpm, or vite.
-globs: '*.ts, *.tsx, *.html, *.css, *.js, *.jsx, package.json'
-alwaysApply: false
----
+# Typewriter
 
-Default to using Bun instead of Node.js.
+A local TypeScript notebook app — like Jupyter, but for TypeScript. Powered by Bun.
 
-- Use `bun <file>` instead of `node <file>` or `ts-node <file>`
-- Use `bun test` instead of `jest` or `vitest`
-- Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
-- Use `bun install` instead of `npm install` or `yarn install` or `pnpm install`
-- Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
-- Use `bunx <package> <command>` instead of `npx <package> <command>`
-- Bun automatically loads .env, so don't use dotenv.
+## Tech Stack
 
-## APIs
+- **Runtime**: Bun (not Node.js)
+- **Server**: `Bun.serve()` with tRPC + WebSocket
+- **Client**: React, Zustand, CodeMirror 6, Recharts, Radix UI, Tailwind v4
+- **Build**: `bun-plugin-tailwind` for dev, `Bun.build()` for production
 
-- `Bun.serve()` supports WebSockets, HTTPS, and routes. Don't use `express`.
-- `bun:sqlite` for SQLite. Don't use `better-sqlite3`.
-- `Bun.redis` for Redis. Don't use `ioredis`.
-- `Bun.sql` for Postgres. Don't use `pg` or `postgres.js`.
-- `WebSocket` is built-in. Don't use `ws`.
-- Prefer `Bun.file` over `node:fs`'s readFile/writeFile
-- Bun.$`ls` instead of execa.
+## Commands
+
+- `bun dev` — dev server with HMR (runs `src/server/dev.ts`)
+- `bun run build` — build client to `dist/` (runs `scripts/build.ts`)
+- `bun start` — production server serving `dist/` (runs `src/server/index.ts`)
+- `bun test` — run tests
+- `bun run typecheck` — type check
+- `bun run lint` — lint
+- `bun run format` — format with Prettier
+- `bun run release:patch|minor|major` — bump version, tag, push, create release
+
+## Architecture
+
+```
+src/
+├── server/
+│   ├── dev.ts          # Dev entry point (HTML imports + HMR)
+│   ├── index.ts        # Production entry point (serves dist/)
+│   ├── api/            # tRPC routers (notebooks CRUD)
+│   ├── kernel/         # TypeScript execution engine
+│   │   ├── manager.ts  # Kernel process lifecycle + queuing
+│   │   └── runner.ts   # Child process that eval's TypeScript
+│   ├── ws/             # WebSocket handler
+│   └── lib/            # Shared server utilities
+├── client/
+│   ├── main.tsx        # React entry point
+│   ├── components/
+│   │   ├── ui/         # Design system (Button, Select, IconButton, etc.)
+│   │   ├── editor/     # Block editor (Editor, BlockWrapper, SlashMenu)
+│   │   │   └── blocks/ # Block components (TextBlock, CodeBlock, etc.)
+│   │   └── layout/     # Shell, Sidebar, Topbar
+│   ├── hooks/          # React hooks
+│   ├── store/          # Zustand stores (notebook, kernel)
+│   ├── lib/            # Client utilities (cn, trpc, utils)
+│   └── styles/         # Tailwind CSS
+├── types/              # Shared types (notebook, ws)
+└── skill/              # Agent skill template (SKILL.md)
+```
+
+## Conventions
+
+- Use `bun` not `node`, `npm`, or `vite`
+- Use `bun add` to install packages, never edit package.json directly
+- Path aliases: `@server/*`, `@client/*`, `@shared/*`, `@ui/*`, `@hooks/*`, `@store/*`, `@lib/*`
+- Tailwind v4 — CSS-based config, no `tailwind.config.ts`
+- Radix UI for all interactive primitives (Select, DropdownMenu, Popover, etc.)
+- Lucide React for all icons
+- Conventional commits: `feat:`, `fix:`, `refactor:`, `chore:`, `test:`, `style:`, `perf:`, `docs:`
+- Commit subject only, no body. Under 100 chars.
+- All packages via `bun add`, never write deps into package.json
+
+## Key Patterns
+
+- **Two server modes**: `dev.ts` uses Bun HTML imports with HMR. `index.ts` serves pre-built static files from `dist/`.
+- **Kernel**: Each notebook gets a persistent `Bun.spawn` child process (`runner.ts`). Code cells are eval'd with variable persistence via `globalThis`. Per-cell variable tracking cleans up removed declarations.
+- **WebSocket**: Plain WebSocket for code execution streaming. tRPC for notebook CRUD.
+- **Autosave**: Debounced 1s, reads latest store state at save time, checks for changes during save.
+- **Notebook files**: `.tw.json` in the user's working directory. Per-notebook `node_modules` in `~/.typewriter/notebooks/<id>/`.
+- **Display blocks**: Evaluate variables from the kernel via WebSocket `eval` message. Auto-refresh all display blocks when any code block finishes.
+- **Block focus**: Uses `pendingFocusId` pattern — set the ID, React renders, `useEffect` focuses after render via `requestAnimationFrame`.
 
 ## Testing
 
-Use `bun test` to run tests.
+Tests live in `tests/` mirroring `src/` structure. Use `bun:test`.
 
-```ts#index.test.ts
-import { test, expect } from "bun:test";
+```ts
+import { test, expect } from 'bun:test'
 
-test("hello world", () => {
-  expect(1).toBe(1);
-});
-```
-
-## Frontend
-
-Use HTML imports with `Bun.serve()`. Don't use `vite`. HTML imports fully support React, CSS, Tailwind.
-
-Server:
-
-```ts#index.ts
-import index from "./index.html"
-
-Bun.serve({
-  routes: {
-    "/": index,
-    "/api/users/:id": {
-      GET: (req) => {
-        return new Response(JSON.stringify({ id: req.params.id }));
-      },
-    },
-  },
-  // optional websocket support
-  websocket: {
-    open: (ws) => {
-      ws.send("Hello, world!");
-    },
-    message: (ws, message) => {
-      ws.send(message);
-    },
-    close: (ws) => {
-      // handle close
-    }
-  },
-  development: {
-    hmr: true,
-    console: true,
-  }
+test('example', () => {
+  expect(1).toBe(1)
 })
 ```
-
-HTML files can import .tsx, .jsx or .js files directly and Bun's bundler will transpile & bundle automatically. `<link>` tags can point to stylesheets and Bun's CSS bundler will bundle.
-
-```html#index.html
-<html>
-  <body>
-    <h1>Hello, world!</h1>
-    <script type="module" src="./frontend.tsx"></script>
-  </body>
-</html>
-```
-
-With the following `frontend.tsx`:
-
-```tsx#frontend.tsx
-import React from "react";
-import { createRoot } from "react-dom/client";
-
-// import .css files directly and it works
-import './index.css';
-
-const root = createRoot(document.body);
-
-export default function Frontend() {
-  return <h1>Hello, world!</h1>;
-}
-
-root.render(<Frontend />);
-```
-
-Then, run index.ts
-
-```sh
-bun --hot ./index.ts
-```
-
-For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
