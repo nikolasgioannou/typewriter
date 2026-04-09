@@ -18,6 +18,9 @@ async function collectOutputs(
   return outputs
 }
 
+const listVarsCode =
+  'Object.keys(globalThis).filter(k => !__builtinKeys.has(k) && !k.startsWith("__") && k !== "require")'
+
 describe('display block data evaluation', () => {
   const nbId = 'test-display'
 
@@ -28,7 +31,6 @@ describe('display block data evaluation', () => {
       "const data = [{ month: 'Jan', sales: 100 }, { month: 'Feb', sales: 150 }]"
     )
 
-    // Access via __tw (how the eval endpoint works)
     const outputs = await collectOutputs(nbId, 'd2', '__tw["data"]')
     const ret = outputs.find((o) => o.type === 'return')
     expect(ret).toBeDefined()
@@ -41,7 +43,7 @@ describe('display block data evaluation', () => {
   })
 
   test('user vars tracking works', async () => {
-    const outputs = await collectOutputs(nbId, 'd3', '[...__tw.__userVars]')
+    const outputs = await collectOutputs(nbId, 'd3', listVarsCode)
     const ret = outputs.find((o) => o.type === 'return')
     expect(ret).toBeDefined()
 
@@ -52,7 +54,6 @@ describe('display block data evaluation', () => {
 
   test('evaluating non-existent variable returns undefined', async () => {
     const outputs = await collectOutputs(nbId, 'd4', '__tw["nonExistentVar"]')
-    // Should return done with no return value (undefined)
     const ret = outputs.find((o) => o.type === 'return')
     expect(ret).toBeUndefined()
     const done = outputs.find((o) => o.type === 'done')
@@ -71,10 +72,47 @@ describe('display block data evaluation', () => {
   })
 
   test('user vars includes all declared variables', async () => {
-    const outputs = await collectOutputs(nbId, 'd7', '[...__tw.__userVars]')
+    const outputs = await collectOutputs(nbId, 'd7', listVarsCode)
     const ret = outputs.find((o) => o.type === 'return')
     const vars = JSON.parse(ret?.text ?? '')
     expect(vars).toContain('data')
     expect(vars).toContain('config')
+  })
+
+  test('removing a declaration from a cell cleans up the variable', async () => {
+    const cellId = 'cell-rerun'
+
+    // First run: declare data and data3
+    await collectOutputs(
+      nbId,
+      cellId,
+      "const data = [{ month: 'Jan', sales: 100 }]\nconst data3 = [{ month: 'Feb', sales: 200 }]"
+    )
+
+    // Verify both exist
+    let outputs = await collectOutputs(nbId, 'check1', listVarsCode)
+    let vars = JSON.parse(outputs.find((o) => o.type === 'return')?.text ?? '[]')
+    expect(vars).toContain('data')
+    expect(vars).toContain('data3')
+
+    // Second run: same cell, but data3 is removed
+    await collectOutputs(nbId, cellId, "const data = [{ month: 'Jan', sales: 100 }]")
+
+    // data3 should no longer exist
+    outputs = await collectOutputs(nbId, 'check2', listVarsCode)
+    vars = JSON.parse(outputs.find((o) => o.type === 'return')?.text ?? '[]')
+    expect(vars).toContain('data')
+    expect(vars).not.toContain('data3')
+
+    // data3 should be undefined
+    outputs = await collectOutputs(nbId, 'check3', '__tw["data3"]')
+    const ret = outputs.find((o) => o.type === 'return')
+    expect(ret).toBeUndefined()
+  })
+
+  test('require does not appear in vars list', async () => {
+    const outputs = await collectOutputs(nbId, 'check-require', listVarsCode)
+    const vars = JSON.parse(outputs.find((o) => o.type === 'return')?.text ?? '[]')
+    expect(vars).not.toContain('require')
   })
 })

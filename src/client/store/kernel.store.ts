@@ -80,6 +80,21 @@ export const useKernelStore = create<KernelState>((set, get) => ({
           durationMs: msg.durationMs,
         })
         set((state) => ({ runningBlock: null, status: { ...state.status, [notebookId]: 'ready' } }))
+
+        // Auto-refresh display blocks after code execution
+        const notebook = notebookStore.notebook
+        if (notebook) {
+          for (const block of notebook.blocks) {
+            if (block.type === 'display') {
+              // Refresh the vars list for each display block
+              get().listVars(notebookId, block.id)
+              // Re-evaluate the variable if one is configured
+              if (block.displayConfig?.variable) {
+                get().evalVariable(notebookId, block.id, block.displayConfig.variable)
+              }
+            }
+          }
+        }
       }
 
       if (msg.type === 'error') {

@@ -21,21 +21,23 @@ import {
   ResponsiveContainer,
   Scatter,
   ScatterChart as RechartsScatterChart,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   XAxis,
   YAxis,
 } from 'recharts'
 
 import type { ChartType, DisplayConfig } from '@shared/notebook'
+import { cn } from '@lib/cn'
 import {
-  Button,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  ToggleGroup,
-  ToggleGroupItem,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from '@ui/index'
 import { useKernelStore } from '@store/kernel.store'
 
@@ -46,13 +48,13 @@ interface DisplayBlockProps {
   onConfigChange: (config: DisplayConfig) => void
 }
 
-const chartTypes: Array<{ type: ChartType; icon: React.ReactNode }> = [
-  { type: 'table', icon: <Table size={14} /> },
-  { type: 'bar', icon: <BarChart3 size={14} /> },
-  { type: 'line', icon: <LineChart size={14} /> },
-  { type: 'area', icon: <AreaIcon size={14} /> },
-  { type: 'scatter', icon: <ScatterChart size={14} /> },
-  { type: 'pie', icon: <PieIcon size={14} /> },
+const chartTypes: Array<{ type: ChartType; label: string; icon: React.ReactNode }> = [
+  { type: 'table', label: 'Table', icon: <Table size={14} /> },
+  { type: 'bar', label: 'Bar Chart', icon: <BarChart3 size={14} /> },
+  { type: 'line', label: 'Line Chart', icon: <LineChart size={14} /> },
+  { type: 'area', label: 'Area Chart', icon: <AreaIcon size={14} /> },
+  { type: 'scatter', label: 'Scatter Plot', icon: <ScatterChart size={14} /> },
+  { type: 'pie', label: 'Pie Chart', icon: <PieIcon size={14} /> },
 ]
 
 const COLORS = [
@@ -119,12 +121,21 @@ function ChartRenderer({
     return (
       <ResponsiveContainer width="100%" height={300}>
         <PieChart>
-          <Pie data={data} dataKey={y} nameKey={x} cx="50%" cy="50%" outerRadius={100} label>
+          <Pie
+            data={data}
+            dataKey={y}
+            nameKey={x}
+            cx="50%"
+            cy="50%"
+            outerRadius={100}
+            label
+            isAnimationActive={false}
+          >
             {data.map((_, i) => (
               <Cell key={i} fill={COLORS[i % COLORS.length]} />
             ))}
           </Pie>
-          <Tooltip />
+          <RechartsTooltip />
         </PieChart>
       </ResponsiveContainer>
     )
@@ -135,7 +146,8 @@ function ChartRenderer({
       <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
       <XAxis dataKey={x} tick={{ fontSize: 11 }} stroke="var(--color-fg-tertiary)" />
       <YAxis tick={{ fontSize: 11 }} stroke="var(--color-fg-tertiary)" />
-      <Tooltip
+      <RechartsTooltip
+        cursor={{ fill: 'var(--color-bg-tertiary)' }}
         contentStyle={{
           backgroundColor: 'var(--color-bg-secondary)',
           border: '1px solid var(--color-border)',
@@ -176,7 +188,7 @@ function ChartRenderer({
 export function DisplayBlock({ blockId, notebookId, config, onConfigChange }: DisplayBlockProps) {
   const { evalVariable, listVars, displayData, availableVars } = useKernelStore()
   const data = displayData[blockId]
-  const vars = availableVars[blockId] ?? []
+  const fetchedVars = availableVars[blockId] ?? []
 
   const keys = useMemo(() => {
     if (!Array.isArray(data) || data.length === 0) return []
@@ -224,8 +236,8 @@ export function DisplayBlock({ blockId, notebookId, config, onConfigChange }: Di
               <SelectValue placeholder="Select variable" />
             </SelectTrigger>
             <SelectContent>
-              {vars.length > 0 ? (
-                vars.map((v) => (
+              {fetchedVars.length > 0 ? (
+                fetchedVars.map((v) => (
                   <SelectItem key={v} value={v}>
                     {v}
                   </SelectItem>
@@ -237,19 +249,28 @@ export function DisplayBlock({ blockId, notebookId, config, onConfigChange }: Di
           </Select>
         </div>
 
-        <ToggleGroup
-          type="single"
-          value={config.chartType}
-          onValueChange={(value) => {
-            if (value) onConfigChange({ ...config, chartType: value as ChartType })
-          }}
-        >
-          {chartTypes.map((ct) => (
-            <ToggleGroupItem key={ct.type} value={ct.type} title={ct.type}>
-              {ct.icon}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+        <TooltipProvider delayDuration={300}>
+          <div className="border-border flex items-center overflow-hidden rounded-md border">
+            {chartTypes.map((ct) => (
+              <Tooltip key={ct.type}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => onConfigChange({ ...config, chartType: ct.type })}
+                    className={cn(
+                      'flex h-7 items-center justify-center px-2 transition-colors',
+                      config.chartType === ct.type
+                        ? 'bg-bg-tertiary text-fg-primary'
+                        : 'text-fg-tertiary hover:text-fg-secondary'
+                    )}
+                  >
+                    {ct.icon}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>{ct.label}</TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+        </TooltipProvider>
 
         {config.chartType !== 'table' && keys.length > 0 && (
           <>
@@ -293,20 +314,21 @@ export function DisplayBlock({ blockId, notebookId, config, onConfigChange }: Di
         )}
 
         <div className="flex-1" />
-        <Button size="sm" onClick={handleRefresh} disabled={!config.variable}>
-          Refresh
-        </Button>
       </div>
 
       {data && Array.isArray(data) ? (
         <ChartRenderer data={data as Record<string, unknown>[]} config={config} />
-      ) : data ? (
+      ) : data && data !== null ? (
         <div className="text-fg-primary p-4 font-mono text-xs">
           <pre className="whitespace-pre-wrap">{JSON.stringify(data, null, 2)}</pre>
         </div>
       ) : (
         <div className="text-fg-tertiary p-8 text-center text-sm">
-          {config.variable ? 'Loading...' : 'Select a variable to display data'}
+          {!config.variable
+            ? 'Select a variable to display data'
+            : data === null
+              ? 'Variable not found — run the code above first'
+              : 'Loading...'}
         </div>
       )}
     </div>

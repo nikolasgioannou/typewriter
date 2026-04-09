@@ -63,12 +63,14 @@ export const wsHandler = {
     }
 
     if (msg.type === 'eval') {
+      let gotData = false
       for await (const output of kernel.runCode(
         msg.notebookId,
         msg.blockId,
         `__tw[${JSON.stringify(msg.expression)}]`
       )) {
         if (output.type === 'return' && output.text) {
+          gotData = true
           try {
             send(ws, {
               type: 'data',
@@ -76,11 +78,11 @@ export const wsHandler = {
               data: JSON.parse(output.text),
             })
           } catch {
-            // If it's not valid JSON, send the raw text
             send(ws, { type: 'data', blockId: msg.blockId, data: output.text })
           }
         }
         if (output.type === 'error') {
+          gotData = true
           send(ws, {
             type: 'error',
             blockId: msg.blockId,
@@ -88,10 +90,13 @@ export const wsHandler = {
           })
         }
       }
+      if (!gotData) {
+        send(ws, { type: 'data', blockId: msg.blockId, data: null })
+      }
     }
 
     if (msg.type === 'list_vars') {
-      const listCode = `[...__tw.__userVars]`
+      const listCode = `Object.keys(globalThis).filter(k => !__builtinKeys.has(k) && !k.startsWith('__') && k !== 'require')`
       for await (const output of kernel.runCode(msg.notebookId, msg.blockId, listCode)) {
         if (output.type === 'return' && output.text) {
           try {

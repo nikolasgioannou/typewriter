@@ -3,10 +3,13 @@
 import { createRequire } from 'node:module'
 
 const __tw = globalThis as any
-const __userVars = new Set<string>()
+const __builtinKeys = new Set(Object.keys(globalThis))
+// Track which variables each block (by id) declared
+const __blockVars = new Map<string, string[]>()
 const require = createRequire(process.cwd() + '/')
 ;(__tw as any).require = require
-;(__tw as any).__userVars = __userVars
+;(__tw as any).__builtinKeys = __builtinKeys
+;(__tw as any).__blockVars = __blockVars
 
 function emit(data: Record<string, unknown>) {
   process.stdout.write(JSON.stringify(data) + '\n')
@@ -45,22 +48,22 @@ function wrapForReturn(code: string): string {
   return lines.join('\n')
 }
 
-function rewriteDeclarations(code: string): string {
+function extractDeclaredNames(code: string): string[] {
   const names: string[] = []
-  const rewritten = code.replace(/^(var|let|const)\s+(\w+)\s*=/gm, (_match, _keyword, name) => {
-    names.push(name)
+  code.replace(/^(?:var|let|const)\s+(\w+)\s*=/gm, (_match, name) => {
+    names.push(name as string)
+    return _match
+  })
+  return names
+}
+
+function rewriteDeclarations(code: string): string {
+  return code.replace(/^(var|let|const)\s+(\w+)\s*=/gm, (_match, _keyword, name) => {
     return `var ${name} = __tw.${name} =`
   })
-  if (names.length === 0) return rewritten
-  // Put tracking on its own line at the top so wrapForReturn only touches the last line
-  const tracking = names.map((n) => `__userVars.add('${n}')`).join('; ')
-  return `${tracking}\n${rewritten}`
 }
 
 function rewriteImports(code: string): string {
-  // import x from 'y' → const x = (await import('y')).default
-  // import { a, b } from 'y' → const { a, b } = await import('y')
-  // import * as x from 'y' → const x = await import('y')
   return code.replace(
     /^import\s+(?:(\*\s+as\s+(\w+))|(\{[^}]+\})|(\w+))\s+from\s+(['"][^'"]+['"])/gm,
     (_match, star, starName, named, defaultName, source) => {
@@ -72,7 +75,7 @@ function rewriteImports(code: string): string {
   )
 }
 
-// Output buffer — batches console.log/error calls into single messages
+// Output buffer
 let stdoutBuffer: string[] = []
 let stderrBuffer: string[] = []
 let flushScheduled = false
@@ -115,13 +118,26 @@ async function execute(id: string, code: string) {
   }
 
   try {
+    // Before running, delete variables this block previously declared
+    // so removed declarations don't persist
+    const prevVars = __blockVars.get(id) ?? []
+    const newVarNames = extractDeclaredNames(code)
+
+    for (const name of prevVars) {
+      if (!newVarNames.includes(name)) {
+        Reflect.deleteProperty(__tw, name)
+      }
+    }
+
+    // Track what this block declares now
+    __blockVars.set(id, newVarNames)
+
     const withImports = rewriteImports(code)
     const rewritten = rewriteDeclarations(withImports)
     const withReturn = wrapForReturn(rewritten)
     const wrapped = `(async () => {\n${withReturn}\n})()`
     const result = await (0, eval)(wrapped)
 
-    // Flush any remaining buffered output before emitting return/done
     flushBuffers()
 
     if (result !== undefined) {

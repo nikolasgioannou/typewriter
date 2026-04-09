@@ -8,7 +8,7 @@ export const ToggleGroup = forwardRef<
 >(({ className, ...props }, ref) => (
   <ToggleGroupPrimitive.Root
     ref={ref}
-    className={cn('border-border flex items-center rounded-md border', className)}
+    className={cn('border-border flex items-center overflow-hidden rounded-md border', className)}
     {...props}
   />
 ))
@@ -22,7 +22,7 @@ export const ToggleGroupItem = forwardRef<
   <ToggleGroupPrimitive.Item
     ref={ref}
     className={cn(
-      'text-fg-tertiary hover:text-fg-secondary data-[state=on]:bg-bg-tertiary data-[state=on]:text-fg-primary flex items-center justify-center px-2 py-1 transition-colors',
+      'text-fg-tertiary hover:text-fg-secondary data-[state=on]:bg-accent/15 data-[state=on]:text-fg-primary flex h-7 items-center justify-center px-2 transition-colors',
       className
     )}
     {...props}
