@@ -106,7 +106,6 @@ export function Editor() {
         e.preventDefault()
         removeBlocks(selectedBlockIds)
         clearSelection()
-        requestAnimationFrame(() => titleRef.current?.focus())
       }
     }
 
@@ -171,11 +170,12 @@ export function Editor() {
   }
 
   const handleRemoveBlock = (blockId: string) => {
-    const idx = blockIds.indexOf(blockId)
+    const currentBlocks = useNotebookStore.getState().notebook?.blocks ?? []
+    const idx = currentBlocks.findIndex((b) => b.id === blockId)
+    const prevBlock = idx > 0 ? currentBlocks[idx - 1] : null
     removeBlock(blockId)
-    const prevId = blockIds[idx - 1]
-    if (prevId) {
-      requestAnimationFrame(() => focusBlock(prevId))
+    if (prevBlock) {
+      pendingFocusId = prevBlock.id
     } else {
       requestAnimationFrame(() => {
         titleRef.current?.focus()

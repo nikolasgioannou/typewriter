@@ -34,10 +34,8 @@ export function ShellBlock({
   }, [onChange])
 
   useEffect(() => {
-    if (editableRef.current && editableRef.current !== document.activeElement) {
-      if (editableRef.current.textContent !== content) {
-        editableRef.current.textContent = content
-      }
+    if (editableRef.current && editableRef.current.textContent !== content) {
+      editableRef.current.textContent = content
     }
   }, [content])
 

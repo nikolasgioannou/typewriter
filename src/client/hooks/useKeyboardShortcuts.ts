@@ -148,8 +148,8 @@ export function useKeyboardShortcuts(
         return
       }
 
-      // Cmd+Z — undo (only when not editing)
-      if (mod && e.key === 'z' && !e.shiftKey && !isEditing()) {
+      // Cmd+Z — unified undo (works everywhere)
+      if (mod && e.key === 'z' && !e.shiftKey) {
         e.preventDefault()
         useNotebookStore.getState().undo()
         return

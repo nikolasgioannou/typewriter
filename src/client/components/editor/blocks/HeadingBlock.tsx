@@ -53,10 +53,8 @@ export function HeadingBlock({
   )
 
   useEffect(() => {
-    if (editableRef.current && editableRef.current !== document.activeElement) {
-      if (editableRef.current.textContent !== content) {
-        editableRef.current.textContent = content
-      }
+    if (editableRef.current && editableRef.current.textContent !== content) {
+      editableRef.current.textContent = content
     }
   }, [content])
 
