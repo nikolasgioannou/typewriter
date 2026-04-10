@@ -75,7 +75,7 @@ export function HeadingBlock({
         ref={editableRef}
         contentEditable
         suppressContentEditableWarning
-        className={`text-fg-primary min-h-[1.5em] ${headingClass[level]}`}
+        className={`text-fg-primary ${headingClass[level]}`}
         onInput={handleInput}
         onKeyDown={handleKeyDown}
         onPaste={(e) => {

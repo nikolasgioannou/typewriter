@@ -146,7 +146,7 @@ export function TextBlock({
         ref={editableRef}
         contentEditable
         suppressContentEditableWarning
-        className="text-fg-primary min-h-[1.5em] text-sm"
+        className="text-fg-primary text-sm"
         onInput={handleInput}
         onKeyDown={handleKeyDown}
         onFocus={() => setFocused(true)}

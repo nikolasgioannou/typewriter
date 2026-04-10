@@ -20,9 +20,11 @@ function formatDuration(ms: number): string {
 interface OutputPanelProps {
   outputs: Output[]
   durationMs?: number
+  hideLabels?: boolean
+  indentContent?: boolean
 }
 
-export function OutputPanel({ outputs, durationMs }: OutputPanelProps) {
+export function OutputPanel({ outputs, durationMs, hideLabels, indentContent }: OutputPanelProps) {
   const [collapsed, setCollapsed] = useState(false)
   const [copied, setCopied] = useState(false)
 
@@ -46,34 +48,41 @@ export function OutputPanel({ outputs, durationMs }: OutputPanelProps) {
   return (
     <div className="border-border border-t">
       <button
-        className="text-fg-tertiary hover:text-fg-secondary flex w-full items-center gap-1 px-3 py-1.5 text-xs"
+        className="text-fg-tertiary hover:text-fg-secondary flex w-full items-center px-3 py-1.5 text-xs"
         onClick={() => setCollapsed(!collapsed)}
       >
-        {collapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
-        <span>Output</span>
-        {lineCount > 1 && <span className="text-fg-tertiary">({lineCount} lines)</span>}
+        <span className="flex items-center gap-2">
+          {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+          <span className="flex items-center gap-1">
+            <span>Output</span>
+            {lineCount > 1 && <span>({lineCount} lines)</span>}
+          </span>
+        </span>
         <span className="flex-1" />
-        {durationMs != null && (
-          <span className="text-fg-tertiary mr-2">{formatDuration(durationMs)}</span>
-        )}
-        <IconButton size="sm" onClick={handleCopy}>
-          {copied ? <Check size={12} /> : <Copy size={12} />}
-        </IconButton>
+        <span className="flex items-center gap-1">
+          {durationMs != null && <span>{formatDuration(durationMs)}</span>}
+          <IconButton size="sm" onClick={handleCopy}>
+            {copied ? <Check size={12} /> : <Copy size={12} />}
+          </IconButton>
+        </span>
       </button>
       {!collapsed && (
         <div className="max-h-64 overflow-y-auto px-3 pb-2">
           {outputs.map((output, i) => (
             <div key={i} className="flex items-baseline gap-2 py-0.5 font-mono text-xs">
-              <span
-                className={cn(
-                  'w-12 shrink-0 text-right',
-                  output.type === 'error' || output.type === 'stderr'
-                    ? 'text-kernel-error'
-                    : 'text-fg-tertiary'
-                )}
-              >
-                {outputTypeLabel[output.type]}
-              </span>
+              {indentContent && <span className="w-3.5 shrink-0" />}
+              {!hideLabels && (
+                <span
+                  className={cn(
+                    'w-12 shrink-0 text-right',
+                    output.type === 'error' || output.type === 'stderr'
+                      ? 'text-kernel-error'
+                      : 'text-fg-tertiary'
+                  )}
+                >
+                  {outputTypeLabel[output.type]}
+                </span>
+              )}
               <pre
                 className={cn(
                   'flex-1 break-all whitespace-pre-wrap',

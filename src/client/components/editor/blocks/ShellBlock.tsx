@@ -1,4 +1,4 @@
-import { Terminal } from 'lucide-react'
+import { DollarSign, Terminal } from 'lucide-react'
 import { useCallback, useEffect, useRef } from 'react'
 
 import type { Output } from '@shared/notebook'
@@ -60,12 +60,12 @@ export function ShellBlock({
 
       <div className="px-3 py-2">
         <div className="flex items-center gap-2 font-mono text-sm">
-          <span className="text-fg-tertiary">$</span>
+          <DollarSign size={14} className="text-fg-tertiary shrink-0" />
           <div
             ref={editableRef}
             contentEditable
             suppressContentEditableWarning
-            className="text-fg-primary min-h-[1.5em] flex-1"
+            className="text-fg-primary flex-1"
             onInput={handleInput}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
@@ -83,7 +83,9 @@ export function ShellBlock({
         </div>
       </div>
 
-      {outputs.length > 0 && <OutputPanel outputs={outputs} durationMs={durationMs} />}
+      {outputs.length > 0 && (
+        <OutputPanel outputs={outputs} durationMs={durationMs} hideLabels indentContent />
+      )}
     </div>
   )
 }
