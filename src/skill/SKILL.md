@@ -107,12 +107,12 @@ Horizontal rule separator. Content should be empty.
 
 ## Important Rules
 
-1. **IDs**: The notebook `id` should be 8 random hex characters. Block `id` fields should be UUIDs.
-2. **Timestamps**: `created` and `updated` should be `Date.now()` values.
-3. **Package installation**: If the notebook uses npm packages, include a shell block with `bun add <packages>` BEFORE the code blocks that import them.
-4. **Variable persistence**: Variables declared in one code block are available in subsequent code blocks. Order matters.
-5. **Display blocks**: The `variable` in `displayConfig` must match a variable name declared in a preceding code block. The variable should be an array of objects for charts.
-6. **File extension**: Always use `.tw.json`.
+1. **Filename**: The file MUST be named `<id>.tw.json` where `<id>` matches the notebook's `id` field. For example, a notebook with `"id": "f7a3b1c2"` must be saved as `f7a3b1c2.tw.json`.
+2. **IDs**: The notebook `id` should be 8 random lowercase hex characters (e.g. `a1b2c3d4`). Block `id` fields should be UUIDs.
+3. **Timestamps**: `created` and `updated` should be `Date.now()` values.
+4. **Package installation**: If the notebook uses npm packages, include a shell block with `bun add <packages>` BEFORE the code blocks that import them.
+5. **Variable persistence**: Variables declared in one code block are available in subsequent code blocks. Order matters.
+6. **Display blocks**: The `variable` in `displayConfig` must match a variable name declared in a preceding code block. The variable should be an array of objects for charts.
 7. **outputs, executionCount, durationMs**: Leave these empty/undefined when creating notebooks. They are populated at runtime.
 
 ## Example: Complete Notebook

@@ -12,7 +12,6 @@ export {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './dropdown-menu'
-export { ScrollArea } from './scroll-area'
 export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select'
 export { Separator } from './separator'
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip'

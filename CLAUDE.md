@@ -70,6 +70,10 @@ src/
 - **Display blocks**: Evaluate variables from the kernel via WebSocket `eval` message. Auto-refresh all display blocks when any code block finishes.
 - **Block focus**: Uses `pendingFocusId` pattern — set the ID, React renders, `useEffect` focuses after render via `requestAnimationFrame`.
 
+## Living Documentation
+
+If the user gives instructions, preferences, or conventions that should persist across sessions, update this CLAUDE.md file to reflect them.
+
 ## Testing
 
 Tests live in `tests/` mirroring `src/` structure. Use `bun:test`.

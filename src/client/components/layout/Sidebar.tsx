@@ -13,7 +13,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   IconButton,
-  ScrollArea,
 } from '@ui/index'
 
 function NotebookMenu({
@@ -81,7 +80,7 @@ export function Sidebar() {
 
   return (
     <div className="bg-bg-secondary border-border flex h-full w-[220px] flex-col border-r">
-      <ScrollArea className="flex-1">
+      <div className="flex-1 overflow-y-auto">
         <div className="space-y-0.5 p-2">
           <button
             onClick={handleCreate}
@@ -95,7 +94,7 @@ export function Sidebar() {
               <ContextMenuTrigger asChild>
                 <div
                   className={cn(
-                    'group flex w-full items-center rounded-md text-sm transition-colors',
+                    'group flex w-full min-w-0 items-center rounded-md text-sm transition-colors',
                     activeNotebookId === nb.id
                       ? 'bg-bg-tertiary text-fg-primary'
                       : 'text-fg-secondary hover:bg-bg-tertiary hover:text-fg-primary'
@@ -140,7 +139,7 @@ export function Sidebar() {
             </ContextMenu>
           ))}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   )
 }
