@@ -10,7 +10,6 @@ interface NotebookState {
   notebook: Notebook | null
   isDirty: boolean
   history: Block[][]
-  blockClipboard: Block[]
 
   setActiveNotebook: (id: string | null) => void
   setNotebook: (notebook: Notebook | null) => void
@@ -23,9 +22,6 @@ interface NotebookState {
   reorderBlocks: (fromIndex: number, toIndex: number) => void
   updateTitle: (title: string) => void
   undo: () => void
-  copyBlocks: (blockIds: string[]) => void
-  cutBlocks: (blockIds: string[]) => void
-  pasteBlocks: (afterBlockId?: string) => string[]
 }
 
 function pushHistory(state: NotebookState): Block[][] {
@@ -35,12 +31,11 @@ function pushHistory(state: NotebookState): Block[][] {
   return history
 }
 
-export const useNotebookStore = create<NotebookState>((set, get) => ({
+export const useNotebookStore = create<NotebookState>((set) => ({
   activeNotebookId: null,
   notebook: null,
   isDirty: false,
   history: [],
-  blockClipboard: [],
 
   setActiveNotebook: (id) => {
     set({ activeNotebookId: id })
@@ -166,49 +161,4 @@ export const useNotebookStore = create<NotebookState>((set, get) => ({
         history,
       }
     }),
-
-  copyBlocks: (blockIds) => {
-    const { notebook } = get()
-    if (!notebook) return
-    const blocks = notebook.blocks.filter((b) => blockIds.includes(b.id))
-    set({ blockClipboard: blocks })
-  },
-
-  cutBlocks: (blockIds) => {
-    const { notebook } = get()
-    if (!notebook) return
-    const blocks = notebook.blocks.filter((b) => blockIds.includes(b.id))
-    set((state) => ({
-      blockClipboard: blocks,
-      notebook: state.notebook
-        ? {
-            ...state.notebook,
-            blocks: state.notebook.blocks.filter((b) => !blockIds.includes(b.id)),
-          }
-        : null,
-      isDirty: true,
-      history: pushHistory(state),
-    }))
-  },
-
-  pasteBlocks: (afterBlockId) => {
-    const { blockClipboard, notebook } = get()
-    if (!notebook || blockClipboard.length === 0) return []
-
-    const newBlocks = blockClipboard.map((b) => ({
-      ...b,
-      id: generateId(),
-      outputs: undefined,
-      executionCount: undefined,
-      durationMs: undefined,
-    }))
-
-    const insertAfter = afterBlockId || notebook.blocks[notebook.blocks.length - 1]?.id || ''
-
-    if (insertAfter) {
-      get().insertBlocksAfter(insertAfter, newBlocks)
-    }
-
-    return newBlocks.map((b) => b.id)
-  },
 }))

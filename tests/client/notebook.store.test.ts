@@ -9,6 +9,7 @@ function resetStore() {
     activeNotebookId: null,
     notebook: null,
     isDirty: false,
+    history: [],
   })
 }
 

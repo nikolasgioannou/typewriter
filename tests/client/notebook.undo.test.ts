@@ -10,7 +10,6 @@ function resetStore() {
     notebook: null,
     isDirty: false,
     history: [],
-    blockClipboard: [],
   })
 }
 
@@ -57,6 +56,15 @@ describe('undo', () => {
     expect(store.getState().notebook?.blocks).toHaveLength(3)
   })
 
+  test('undo reverts insertBlocksAfter', () => {
+    store.getState().setNotebook(sampleNotebook)
+    store.getState().insertBlocksAfter('b1', [{ id: 'new1', type: 'text', content: 'inserted' }])
+    expect(store.getState().notebook?.blocks).toHaveLength(4)
+
+    store.getState().undo()
+    expect(store.getState().notebook?.blocks).toHaveLength(3)
+  })
+
   test('multiple undos work in sequence', () => {
     store.getState().setNotebook(sampleNotebook)
     store.getState().removeBlock('b1')
@@ -75,52 +83,22 @@ describe('undo', () => {
     store.getState().undo()
     expect(store.getState().notebook?.blocks).toHaveLength(3)
   })
-})
 
-describe('copy/paste blocks', () => {
-  test('copy and paste duplicates blocks', () => {
+  test('undo reverts reorder', () => {
     store.getState().setNotebook(sampleNotebook)
-    store.getState().copyBlocks(['b1', 'b2'])
-    expect(store.getState().blockClipboard).toHaveLength(2)
-
-    const newIds = store.getState().pasteBlocks('b3')
-    expect(newIds).toHaveLength(2)
-    expect(store.getState().notebook?.blocks).toHaveLength(5)
-
-    // Pasted blocks have new IDs
-    expect(newIds[0]).not.toBe('b1')
-    expect(newIds[1]).not.toBe('b2')
-
-    // Pasted blocks have same content
-    const blocks = store.getState().notebook?.blocks ?? []
-    const pasted1 = blocks.find((b) => b.id === newIds[0])
-    expect(pasted1?.content).toBe('console.log(1)')
-  })
-
-  test('cut removes blocks and paste adds them back', () => {
-    store.getState().setNotebook(sampleNotebook)
-    store.getState().cutBlocks(['b2'])
-    expect(store.getState().notebook?.blocks).toHaveLength(2)
-    expect(store.getState().blockClipboard).toHaveLength(1)
-
-    const newIds = store.getState().pasteBlocks('b1')
-    expect(newIds).toHaveLength(1)
-    expect(store.getState().notebook?.blocks).toHaveLength(3)
-  })
-
-  test('paste with no clipboard does nothing', () => {
-    store.getState().setNotebook(sampleNotebook)
-    const newIds = store.getState().pasteBlocks('b1')
-    expect(newIds).toHaveLength(0)
-    expect(store.getState().notebook?.blocks).toHaveLength(3)
-  })
-
-  test('undo reverts cut', () => {
-    store.getState().setNotebook(sampleNotebook)
-    store.getState().cutBlocks(['b1', 'b2'])
-    expect(store.getState().notebook?.blocks).toHaveLength(1)
+    store.getState().reorderBlocks(0, 2)
+    expect(store.getState().notebook?.blocks[0]?.id).toBe('b2')
 
     store.getState().undo()
-    expect(store.getState().notebook?.blocks).toHaveLength(3)
+    expect(store.getState().notebook?.blocks[0]?.id).toBe('b1')
+  })
+
+  test('history resets when notebook changes', () => {
+    store.getState().setNotebook(sampleNotebook)
+    store.getState().removeBlock('b1')
+    expect(store.getState().history).toHaveLength(1)
+
+    store.getState().setNotebook(sampleNotebook)
+    expect(store.getState().history).toHaveLength(0)
   })
 })
