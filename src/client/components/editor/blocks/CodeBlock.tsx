@@ -18,6 +18,7 @@ interface CodeBlockProps {
   isRunning: boolean
   onChange: (content: string) => void
   onRun: () => void
+  onStop: () => void
 }
 
 function useIsDark() {
@@ -41,6 +42,7 @@ export function CodeBlock({
   executionCount,
   durationMs,
   isRunning,
+  onStop,
   onChange,
   onRun,
 }: CodeBlockProps) {
@@ -108,7 +110,7 @@ export function CodeBlock({
     }
   }, [isDark])
 
-  const countLabel = executionCount != null ? `[${executionCount}]` : '[ ]'
+  const countLabel = isRunning ? '[*]' : executionCount != null ? `[${executionCount}]` : '[ ]'
 
   return (
     <div className="border-border bg-bg-secondary overflow-hidden rounded-lg border">
@@ -118,14 +120,15 @@ export function CodeBlock({
           <span className="text-fg-tertiary font-mono text-xs">{countLabel}</span>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant={isRunning ? 'ghost' : 'default'}
-            disabled={isRunning}
-            onClick={onRun}
-          >
-            {isRunning ? '● running' : 'Run'}
-          </Button>
+          {isRunning ? (
+            <Button size="sm" variant="destructive" onClick={onStop}>
+              Stop
+            </Button>
+          ) : (
+            <Button size="sm" onClick={onRun}>
+              Run
+            </Button>
+          )}
         </div>
       </div>
 

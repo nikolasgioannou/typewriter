@@ -74,7 +74,12 @@ async function* runCodeInternal(
 
       for (const line of lines) {
         if (!line.trim()) continue
-        const parsed = JSON.parse(line) as KernelOutput
+        let parsed: KernelOutput
+        try {
+          parsed = JSON.parse(line) as KernelOutput
+        } catch {
+          continue
+        }
         if (parsed.id !== blockId) continue
 
         if (parsed.type === 'done') {

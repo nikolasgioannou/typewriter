@@ -125,6 +125,12 @@ export const wsHandler = {
       }
     }
 
+    if (msg.type === 'stop') {
+      await kernel.restart(msg.notebookId)
+      send(ws, { type: 'done', blockId: msg.blockId, executionCount: 0, durationMs: 0 })
+      send(ws, { type: 'kernel_ready', notebookId: msg.notebookId })
+    }
+
     if (msg.type === 'restart') {
       await kernel.restart(msg.notebookId)
       send(ws, { type: 'kernel_ready', notebookId: msg.notebookId })

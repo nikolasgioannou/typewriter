@@ -13,6 +13,7 @@ interface ShellBlockProps {
   isRunning: boolean
   onChange: (content: string) => void
   onRun: () => void
+  onStop: () => void
 }
 
 export function ShellBlock({
@@ -22,6 +23,7 @@ export function ShellBlock({
   isRunning,
   onChange,
   onRun,
+  onStop,
 }: ShellBlockProps) {
   const editableRef = useRef<HTMLDivElement>(null)
   const isComposing = useRef(false)
@@ -47,14 +49,15 @@ export function ShellBlock({
           <span className="text-fg-tertiary font-mono text-xs">shell</span>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant={isRunning ? 'ghost' : 'default'}
-            disabled={isRunning}
-            onClick={onRun}
-          >
-            {isRunning ? '● running' : 'Run'}
-          </Button>
+          {isRunning ? (
+            <Button size="sm" variant="destructive" onClick={onStop}>
+              Stop
+            </Button>
+          ) : (
+            <Button size="sm" onClick={onRun}>
+              Run
+            </Button>
+          )}
         </div>
       </div>
 
@@ -84,7 +87,7 @@ export function ShellBlock({
       </div>
 
       {outputs.length > 0 && (
-        <OutputPanel outputs={outputs} durationMs={durationMs} hideLabels indentContent />
+        <OutputPanel outputs={outputs} durationMs={durationMs} indentContent />
       )}
     </div>
   )

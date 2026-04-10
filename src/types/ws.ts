@@ -5,6 +5,7 @@ export type ClientMessage =
   | { type: 'shell'; notebookId: string; blockId: string; command: string }
   | { type: 'eval'; notebookId: string; blockId: string; expression: string }
   | { type: 'list_vars'; notebookId: string; blockId: string }
+  | { type: 'stop'; notebookId: string; blockId: string }
   | { type: 'restart'; notebookId: string }
 
 export type ServerMessage =

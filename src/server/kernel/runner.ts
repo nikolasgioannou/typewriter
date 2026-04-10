@@ -11,8 +11,11 @@ const require = createRequire(process.cwd() + '/')
 ;(__tw as any).__builtinKeys = __builtinKeys
 ;(__tw as any).__blockVars = __blockVars
 
+const originalStdoutWrite = process.stdout.write.bind(process.stdout)
+const originalStderrWrite = process.stderr.write.bind(process.stderr)
+
 function emit(data: Record<string, unknown>) {
-  process.stdout.write(JSON.stringify(data) + '\n')
+  originalStdoutWrite(JSON.stringify(data) + '\n')
 }
 
 const originalLog = console.log
@@ -77,9 +80,9 @@ function rewriteImports(code: string): string {
   )
 }
 
-// Output buffer
-let stdoutBuffer: string[] = []
-let stderrBuffer: string[] = []
+// Output buffer — accumulates as raw strings
+let stdoutBuffer = ''
+let stderrBuffer = ''
 let flushScheduled = false
 let currentId: string | null = null
 
@@ -93,31 +96,48 @@ function flushBuffers() {
   flushScheduled = false
   if (!currentId) return
 
-  if (stdoutBuffer.length > 0) {
-    emit({ type: 'stdout', text: stdoutBuffer.join('\n'), id: currentId })
-    stdoutBuffer = []
+  if (stdoutBuffer) {
+    emit({ type: 'stdout', text: stdoutBuffer.replace(/\n$/, ''), id: currentId })
+    stdoutBuffer = ''
   }
-  if (stderrBuffer.length > 0) {
-    emit({ type: 'stderr', text: stderrBuffer.join('\n'), id: currentId })
-    stderrBuffer = []
+  if (stderrBuffer) {
+    emit({ type: 'stderr', text: stderrBuffer.replace(/\n$/, ''), id: currentId })
+    stderrBuffer = ''
   }
 }
 
 async function execute(id: string, code: string) {
   const startTime = performance.now()
   currentId = id
-  stdoutBuffer = []
-  stderrBuffer = []
+  stdoutBuffer = ''
+  stderrBuffer = ''
 
   console.log = (...args: unknown[]) => {
-    stdoutBuffer.push(args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join(' '))
+    const line = args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ')
+    stdoutBuffer += (stdoutBuffer && !stdoutBuffer.endsWith('\n') ? '\n' : '') + line + '\n'
     scheduleFlush()
   }
 
   console.error = (...args: unknown[]) => {
-    stderrBuffer.push(args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join(' '))
+    const line = args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ')
+    stderrBuffer += (stderrBuffer && !stderrBuffer.endsWith('\n') ? '\n' : '') + line + '\n'
     scheduleFlush()
   }
+
+  // Intercept process.stdout.write / process.stderr.write for libraries that write directly
+  process.stdout.write = ((chunk: unknown) => {
+    const text = typeof chunk === 'string' ? chunk : Buffer.from(chunk as ArrayBuffer).toString()
+    stdoutBuffer += text
+    scheduleFlush()
+    return true
+  }) as typeof process.stdout.write
+
+  process.stderr.write = ((chunk: unknown) => {
+    const text = typeof chunk === 'string' ? chunk : Buffer.from(chunk as ArrayBuffer).toString()
+    stderrBuffer += text
+    scheduleFlush()
+    return true
+  }) as typeof process.stderr.write
 
   try {
     // Before running, delete variables this block previously declared
@@ -160,6 +180,8 @@ async function execute(id: string, code: string) {
   } finally {
     console.log = originalLog
     console.error = originalError
+    process.stdout.write = originalStdoutWrite
+    process.stderr.write = originalStderrWrite
     currentId = null
     emit({ type: 'done', id, durationMs: Math.round(performance.now() - startTime) })
   }

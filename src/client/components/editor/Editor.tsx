@@ -43,7 +43,7 @@ export function Editor() {
     removeBlock,
     reorderBlocks,
   } = useNotebookStore()
-  const { runningBlock, runBlock, runShell } = useKernelStore()
+  const { runningBlock, runBlock, runShell, stopBlock } = useKernelStore()
   const { registerBlock, focusBlock } = useBlockFocus()
   const editorRef = useRef<HTMLDivElement>(null)
   const { selectedBlockIds, clearSelection, handleEditorMouseDown, lassoBox, hasSelection } =
@@ -239,6 +239,7 @@ export function Editor() {
                       isRunning={runningBlock === block.id}
                       onChange={(content) => updateBlock(block.id, { content })}
                       onRun={() => runBlock(activeNotebookId, block.id, block.content)}
+                      onStop={() => stopBlock(activeNotebookId, block.id)}
                     />
                   )}
                   {block.type === 'text' && (
@@ -272,6 +273,7 @@ export function Editor() {
                       isRunning={runningBlock === block.id}
                       onChange={(content) => updateBlock(block.id, { content })}
                       onRun={() => runShell(activeNotebookId, block.id, block.content)}
+                      onStop={() => stopBlock(activeNotebookId, block.id)}
                     />
                   )}
                   {block.type === 'display' && (

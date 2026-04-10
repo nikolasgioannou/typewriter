@@ -19,6 +19,7 @@ interface KernelState {
   runShell: (notebookId: string, blockId: string, command: string) => void
   evalVariable: (notebookId: string, blockId: string, expression: string) => void
   listVars: (notebookId: string, blockId: string) => void
+  stopBlock: (notebookId: string, blockId: string) => void
   runAll: (notebookId: string) => void
   restartKernel: (notebookId: string) => void
   setStatus: (notebookId: string, status: KernelStatus) => void
@@ -197,6 +198,14 @@ export const useKernelStore = create<KernelState>((set, get) => ({
     if (!ws || ws.readyState !== WebSocket.OPEN) return
 
     const msg: ClientMessage = { type: 'list_vars', notebookId, blockId }
+    ws.send(JSON.stringify(msg))
+  },
+
+  stopBlock: (notebookId, blockId) => {
+    const { ws } = get()
+    if (!ws || ws.readyState !== WebSocket.OPEN) return
+
+    const msg: ClientMessage = { type: 'stop', notebookId, blockId }
     ws.send(JSON.stringify(msg))
   },
 
