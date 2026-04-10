@@ -15,7 +15,6 @@ export interface DisplayConfig {
   chartType: ChartType
   xKey?: string
   yKey?: string
-  title?: string
 }
 
 export type OutputType = 'stdout' | 'stderr' | 'return' | 'error'

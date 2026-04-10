@@ -1,7 +1,6 @@
 import { useCallback, useRef } from 'react'
 
 export function useBlockFocus() {
-  const focusedBlockRef = useRef<string | null>(null)
   const blockRefsMap = useRef<Map<string, HTMLElement>>(new Map())
 
   const registerBlock = useCallback((id: string, el: HTMLElement | null) => {
@@ -13,7 +12,6 @@ export function useBlockFocus() {
   }, [])
 
   const focusBlock = useCallback((id: string) => {
-    focusedBlockRef.current = id
     const el = blockRefsMap.current.get(id)
     if (el) {
       const focusable = el.querySelector<HTMLElement>(
@@ -33,5 +31,5 @@ export function useBlockFocus() {
     }
   }, [])
 
-  return { registerBlock, focusBlock, focusedBlockRef }
+  return { registerBlock, focusBlock }
 }

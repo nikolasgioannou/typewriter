@@ -5,17 +5,15 @@ import { fetchRequestHandler } from '@trpc/server/adapters/fetch'
 
 import homepage from '@client/index.html'
 import { appRouter } from '@server/api/router'
-import { shutdown } from '@server/kernel/manager'
+import { handleShutdown, printBanner, startServer } from '@server/lib/start-server'
 import { wsHandler } from '@server/ws/handler'
 
-const basePort = Number(process.env['PORT'] ?? 8888)
-
-const serverOptions = {
+const server = startServer({
   routes: {
     '/': homepage,
     '/:notebookId': homepage,
   },
-  async fetch(req: Request, server: { upgrade: (req: Request) => boolean }) {
+  async fetch(req: Request, server: { upgrade: (req: Request, options?: unknown) => boolean }) {
     const url = new URL(req.url)
 
     if (url.pathname === '/ws') {
@@ -40,42 +38,7 @@ const serverOptions = {
     hmr: true,
     console: false,
   },
-}
-
-function startServer(port: number, maxAttempts = 10): ReturnType<typeof Bun.serve> {
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    try {
-      return Bun.serve({ ...serverOptions, port: port + attempt })
-    } catch (err) {
-      const isPortTaken =
-        (err instanceof Error && (err as NodeJS.ErrnoException).code === 'EADDRINUSE') ||
-        String(err).includes('port')
-      if (isPortTaken) continue
-      throw err
-    }
-  }
-  throw new Error(
-    `Could not find an open port after trying ${basePort}-${basePort + maxAttempts - 1}`
-  )
-}
-
-const server = startServer(basePort)
-
-const url = `http://localhost:${server.port}`
-
-console.log(
-  [
-    '',
-    'typewriter (dev)',
-    `local       ${url}`,
-    'kernel      ready',
-    '',
-    'Ctrl+C to stop',
-    '',
-  ].join('\n')
-)
-
-process.on('SIGINT', () => {
-  shutdown()
-  process.exit(0)
 })
+
+printBanner(server.port ?? 8888, 'typewriter (dev)')
+handleShutdown()

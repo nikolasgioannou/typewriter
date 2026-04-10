@@ -23,7 +23,6 @@ const BlockSchema: z.ZodType<Block> = z.object({
       chartType: z.enum(['table', 'line', 'bar', 'area', 'scatter', 'pie']),
       xKey: z.string().optional(),
       yKey: z.string().optional(),
-      title: z.string().optional(),
     })
     .optional(),
 })

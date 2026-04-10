@@ -153,7 +153,7 @@ export const useKernelStore = create<KernelState>((set, get) => ({
   disconnect: () => {
     const { ws } = get()
     ws?.close()
-    set({ ws: null })
+    set({ ws: null, displayData: {}, availableVars: {} })
   },
 
   runBlock: (notebookId, blockId, code) => {
