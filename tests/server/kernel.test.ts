@@ -66,4 +66,33 @@ describe('kernel', () => {
     const stderr = outputs.find((o) => o.type === 'stderr')
     expect(stderr?.text).toBe('warning')
   })
+
+  test('supports TypeScript type annotations', async () => {
+    const outputs = await collectOutputs(
+      nbId,
+      'b9',
+      'function greet(name: string): string { return `Hello ${name}` }\ngreet("TypeScript")'
+    )
+    const ret = outputs.find((o) => o.type === 'return')
+    expect(ret?.text).toBe('Hello TypeScript')
+  })
+
+  test('supports TypeScript interfaces and type aliases', async () => {
+    const outputs = await collectOutputs(
+      nbId,
+      'b10',
+      'interface User { name: string; age: number }\nconst user: User = { name: "Alice", age: 30 }\nuser'
+    )
+    const ret = outputs.find((o) => o.type === 'return')
+    const parsed = JSON.parse(ret?.text ?? '{}')
+    expect(parsed.name).toBe('Alice')
+    expect(parsed.age).toBe(30)
+  })
+
+  test('persists function declarations across cells', async () => {
+    await collectOutputs(nbId, 'b11', 'function double(n: number): number { return n * 2 }')
+    const outputs = await collectOutputs(nbId, 'b12', 'double(21)')
+    const ret = outputs.find((o) => o.type === 'return')
+    expect(ret?.text).toBe('42')
+  })
 })

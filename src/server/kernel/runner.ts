@@ -57,6 +57,10 @@ function extractDeclaredNames(code: string): string[] {
     names.push(name as string)
     return _match
   })
+  code.replace(/^function\s+(\w+)\s*\(/gm, (_match, name) => {
+    names.push(name as string)
+    return _match
+  })
   return names
 }
 
@@ -156,9 +160,16 @@ async function execute(id: string, code: string) {
 
     const withImports = rewriteImports(code)
     const rewritten = rewriteDeclarations(withImports)
-    const withReturn = wrapForReturn(rewritten)
-    const wrapped = `(async () => {\n${withReturn}\n})()`
-    const result = await (0, eval)(wrapped)
+    // Add __tw assignments after each function declaration
+    const withFunctions = rewritten.replace(
+      /^(function\s+(\w+)\s*\()/gm,
+      (_match, decl, name) => `__tw.${name} = ${name};\n${decl}`
+    )
+    const withReturn = wrapForReturn(withFunctions)
+    // Transpile TypeScript to JavaScript (strip type annotations)
+    const transpiler = new Bun.Transpiler({ loader: 'ts' })
+    const js = transpiler.transformSync(`(async () => {\n${withReturn}\n})()`)
+    const result = await (0, eval)(js)
 
     flushBuffers()
 
