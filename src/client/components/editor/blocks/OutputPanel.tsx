@@ -47,25 +47,26 @@ export function OutputPanel({ outputs, durationMs, hideLabels, indentContent }: 
 
   return (
     <div className="border-border border-t">
-      <button
-        className="text-fg-tertiary hover:text-fg-secondary flex w-full items-center px-3 py-1.5 text-xs"
-        onClick={() => setCollapsed(!collapsed)}
-      >
-        <span className="flex items-center gap-2">
-          {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-          <span className="flex items-center gap-1">
-            <span>Output</span>
-            {lineCount > 1 && <span>({lineCount} lines)</span>}
+      <div className="text-fg-tertiary flex w-full items-center px-3 py-1.5 text-xs">
+        <div
+          className="hover:text-fg-secondary flex flex-1 cursor-pointer items-center"
+          onClick={() => setCollapsed(!collapsed)}
+        >
+          <span className="flex items-center gap-2">
+            {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+            <span className="flex items-center gap-1">
+              <span>Output</span>
+              {lineCount > 1 && <span>({lineCount} lines)</span>}
+            </span>
           </span>
-        </span>
-        <span className="flex-1" />
+        </div>
         <span className="flex items-center gap-1">
           {durationMs != null && <span>{formatDuration(durationMs)}</span>}
           <IconButton size="sm" onClick={handleCopy}>
             {copied ? <Check size={12} /> : <Copy size={12} />}
           </IconButton>
         </span>
-      </button>
+      </div>
       {!collapsed && (
         <div className="max-h-64 overflow-y-auto px-3 pb-2">
           {outputs.map((output, i) => (
