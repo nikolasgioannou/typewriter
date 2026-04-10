@@ -67,9 +67,11 @@ function rewriteImports(code: string): string {
   return code.replace(
     /^import\s+(?:(\*\s+as\s+(\w+))|(\{[^}]+\})|(\w+))\s+from\s+(['"][^'"]+['"])/gm,
     (_match, star, starName, named, defaultName, source) => {
-      if (star) return `const ${starName} = await import(${source})`
-      if (named) return `const ${named} = await import(${source})`
-      if (defaultName) return `const ${defaultName} = (await import(${source})).default`
+      // Use require.resolve to find the package from the notebook's node_modules
+      const resolved = `require.resolve(${source})`
+      if (star) return `const ${starName} = await import(${resolved})`
+      if (named) return `const ${named} = await import(${resolved})`
+      if (defaultName) return `const ${defaultName} = (await import(${resolved})).default`
       return _match
     }
   )
