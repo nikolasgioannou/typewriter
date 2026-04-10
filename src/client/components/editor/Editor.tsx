@@ -15,6 +15,7 @@ import { useBlockFocus } from '@hooks/useBlockFocus'
 import { useBlockSelection } from '@hooks/useBlockSelection'
 import { useInputMode } from '@hooks/useInputMode'
 import { useKernel } from '@hooks/useKernel'
+import { useKeyboardShortcuts } from '@hooks/useKeyboardShortcuts'
 import { cn } from '@lib/cn'
 import { trpc } from '@lib/trpc'
 import { useKernelStore } from '@store/kernel.store'
@@ -41,6 +42,7 @@ export function Editor() {
     addBlock,
     appendBlock,
     removeBlock,
+    removeBlocks,
     reorderBlocks,
   } = useNotebookStore()
   const { runningBlock, runBlock, runShell, stopBlock } = useKernelStore()
@@ -63,6 +65,7 @@ export function Editor() {
   )
 
   useKernel(activeNotebookId)
+  useKeyboardShortcuts(activeNotebookId, selectedBlockIds, clearSelection)
   useAutosave()
 
   useEffect(() => {
@@ -101,9 +104,7 @@ export function Editor() {
 
       if (e.key === 'Backspace' || e.key === 'Delete') {
         e.preventDefault()
-        for (const id of selectedBlockIds) {
-          removeBlock(id)
-        }
+        removeBlocks(selectedBlockIds)
         clearSelection()
         requestAnimationFrame(() => titleRef.current?.focus())
       }
